@@ -1,0 +1,22 @@
+calificaciones = []
+
+print("Captura 5 calificaciones (0 a 100):")
+for i in range(5):
+    while True:
+        try:
+            cal = int(input(f"Calificación {i + 1}: "))
+            if 0 <= cal <= 100:
+                calificaciones.append(cal)
+                break
+            else:
+                print("Error: La calificación debe estar entre 0 y 100.")
+        except ValueError:
+            print("Error: Ingresa un número entero válido.")
+
+promedio = sum(calificaciones) / len(calificaciones)
+
+print("\n--- Resumen ---")
+print(f"Calificaciones guardadas: {calificaciones}")
+print(f"Promedio: {promedio:.2f}")
+print(f"Calificación más alta: {max(calificaciones)}")
+print(f"Calificación más baja: {min(calificaciones)}")
