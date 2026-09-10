@@ -1,0 +1,16 @@
+videojuegos = []
+
+videojuegos.append("Minecraft")
+videojuegos.append("Halo")
+videojuegos.append("FIFA")
+videojuegos.append("Zelda")
+
+print(videojuegos)
+
+# Eliminamos por índice
+videojuegos.pop(0)
+videojuegos.pop(1)
+
+videojuegos.append("God of War")
+
+print(videojuegos)
