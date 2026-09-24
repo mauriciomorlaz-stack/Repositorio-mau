@@ -1,0 +1,136 @@
+import math
+import turtle
+
+
+def generar_serie_fibonacci(cantidad_terminos: int) -> list[int]:
+    """
+    Genera la Serie de Fibonacci deduplicada (números de pétalos únicos).
+    """
+    if cantidad_terminos <= 0:
+        return []
+    if cantidad_terminos == 1:
+        return [1]
+
+    fibonacci = [1, 1]
+    for _ in range(cantidad_terminos - 2):
+        fibonacci.append(fibonacci[-1] + fibonacci[-2])
+
+    return list(dict.fromkeys(fibonacci))
+
+
+# Base de datos que asocia los números calculados con sus tipos de flores
+INFORMACION_FLORES = {
+    1: "Flores de una sola bráctea o espata (Ejemplo: Cala, Lirio de paz)",
+    2: "Flores de dos pétalos (Ejemplo: Corona de espinas)",
+    3: "Flores del grupo de las Liliáceas (Ejemplo: Lirio, Iris, Tulipán)",
+    5: "Flores del grupo de las Rosáceas (Ejemplo: Hibisco, Rosa silvestre, Botón de oro)",
+    8: "Flores del grupo de las Ranunculáceas (Ejemplo: Delphinium, Sanguinaria)",
+    13: "Flores compuestas del grupo de las Asteráceas (Ejemplo: Caléndula, Cineraria)",
+    21: "Flores compuestas y Pasifloráceas (Ejemplo: Flor de la pasión, Margarita silvestre)",
+    34: "Flores compuestas de capítulo denso (Ejemplo: Margarita común, Piretro)",
+    55: "Flores compuestas de alta densidad (Ejemplo: Áster, Margarita gigante)",
+    89: "Flores compuestas complejas (Ejemplo: Crisantemo de jardín)"
+}
+
+
+def dibujar_flor(num_petalos: int, info_flor: str):
+    """
+    Dibuja la flor usando la librería nativa Turtle.
+    - Distribuye los pétalos radialmente según 'num_petalos'.
+    - Traza el centro con semillas dispuestas en el Ángulo Dorado (137.5°).
+    """
+    screen = turtle.Screen()
+    screen.clear()
+    screen.bgcolor("white")
+    screen.title(f"Flor de Fibonacci - {num_petalos} Pétalos")
+
+    t = turtle.Turtle()
+    t.speed(0)  # Máxima velocidad de dibujo
+    t.hideturtle()
+
+    # 1. Dibujo de Pétalos
+    angulo_separacion = 360 / num_petalos if num_petalos > 0 else 360
+    t.color("#C71585", "#FFB6C1")  # Borde rosa oscuro, relleno rosa claro
+
+    for i in range(num_petalos):
+        t.penup()
+        t.goto(0, 0)
+        t.setheading(i * angulo_separacion)
+        t.pendown()
+
+        t.begin_fill()
+        t.circle(90, 60)
+        t.left(120)
+        t.circle(90, 60)
+        t.end_fill()
+
+    # 2. Centro en Espiral de Fibonacci (Ángulo Dorado ~137.5°)
+    num_semillas = min(120, max(30, num_petalos * 6))
+    angulo_dorado = 137.508
+
+    for i in range(1, num_semillas + 1):
+        r = 10 * math.sqrt(i)
+        theta = i * angulo_dorado
+
+        x = r * math.cos(math.radians(theta))
+        y = r * math.sin(math.radians(theta))
+
+        t.penup()
+        t.goto(x, y)
+        t.pendown()
+        t.dot(5, "#DAA520")  # Semillas doradas
+
+    # 3. Información en pantalla
+    t.penup()
+    t.goto(0, -220)
+    t.color("#333333")
+    t.write(
+        f"Flor de {num_petalos} pétalos\n{info_flor}",
+        align="center",
+        font=("Arial", 10, "bold")
+    )
+
+    print("🎨 Dibujo completado. Haz clic sobre la ventana de la flor para cerrarla y continuar...")
+    screen.exitonclick()
+
+
+def programa_interactivo():
+    serie_calculada = generar_serie_fibonacci(11)
+
+    print("=" * 65)
+    print("   SERIE DE FIBONACCI GENERADA MEDIANTE CÁLCULO MATEMÁTICO")
+    print("=" * 65)
+    print(f"Secuencia obtenida: {serie_calculada}")
+    print("=" * 65)
+
+    while True:
+        entrada = input("\nElige un número de la serie para dibujar su flor (o '0' para salir): ").strip()
+
+        if entrada == '0':
+            print("\n¡Gracias por explorar la Serie de Fibonacci y la Botánica! 🌸")
+            break
+
+        if not entrada.isdigit():
+            print("⚠️ Ingresa un número entero positivo válido.")
+            continue
+
+        numero_elegido = int(entrada)
+
+        if numero_elegido in serie_calculada:
+            tipo_flor = INFORMACION_FLORES.get(
+                numero_elegido, 
+                "Flor con gran densidad de pétalos."
+            )
+            print("\n" + "─" * 60)
+            print(f"🔢 Número de Fibonacci elegido: {numero_elegido}")
+            print(f"🌸 Tipo de flor correspondiente: {tipo_flor}")
+            print("─" * 60)
+
+            dibujar_flor(numero_elegido, tipo_flor)
+        else:
+            print(f"\n❌ El número {numero_elegido} no está en la serie calculada.")
+            print(f"   Por favor elige únicamente entre los calculados: {serie_calculada}")
+
+
+if __name__ == "__main__":
+    programa_interactivo()
