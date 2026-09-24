@@ -1,0 +1,62 @@
+import random
+import time
+
+def crear_matriz(filas, columnas):
+    """Crea una matriz de dimensiones (filas x columnas) con valores aleatorios."""
+    return [[random.uniform(5.0, 10.0) for _ in range(columnas)] for _ in range(filas)]
+
+def benchmark_matriz(num_alumnos, num_materias, alumno_id, materia_id, iteraciones=10_000_000):
+    print(f"\n==================================================")
+    print(f" PRUEBA CON {num_alumnos:,} ALUMNOS Y {num_materias:,} MATERIAS")
+    print(f"==================================================")
+
+    # 1. Orientación A: Filas = Alumnos, Columnas = Materias
+    # Acceso: matriz_A[alumno_id][materia_id]
+    matriz_A = crear_matriz(num_alumnos, num_materias)
+
+    # 2. Orientación B: Filas = Materias, Columnas = Alumnos
+    # Acceso: matriz_B[materia_id][alumno_id]
+    matriz_B = crear_matriz(num_materias, num_alumnos)
+
+    # --- Benchmark Orientación A (Alumnos x Materias) ---
+    inicio_A = time.perf_counter()
+    for _ in range(iteraciones):
+        val_A = matriz_A[alumno_id][materia_id]
+    tiempo_A = time.perf_counter() - inicio_A
+
+    # --- Benchmark Orientación B (Materias x Alumnos) ---
+    inicio_B = time.perf_counter()
+    for _ in range(iteraciones):
+        val_B = matriz_B[materia_id][alumno_id]
+    tiempo_B = time.perf_counter() - inicio_B
+
+    # --- Resultados ---
+    print(f"Resultado en Orientación A (Alumnos x Materias): {val_A:.2f}")
+    print(f"Tiempo total ({iteraciones:,} accesos): {tiempo_A:.6f} segundos")
+    print(f"\nResultado en Orientación B (Materias x Alumnos): {val_B:.2f}")
+    print(f"Tiempo total ({iteraciones:,} accesos): {tiempo_B:.6f} segundos")
+
+    diferencia = abs(tiempo_A - tiempo_B)
+    print(f"\nDiferencia de tiempo: {diferencia:.6f} segundos")
+
+def main():
+    # 1. Caso base solicitado (500 alumnos, 6 materias)
+    # Alumno 321 (índice 320) y Materia 5 (índice 4)
+    print("--- CASO BASE ORIGINAL ---")
+    benchmark_matriz(num_alumnos=500, num_materias=6, alumno_id=320, materia_id=4)
+
+    # 2. Pruebas escaladas
+    casos_prueba = [
+        (1_000, 100),
+        (10_000, 500),
+        # Ajustado para no agotar la memoria RAM disponible con listas puras de Python
+        (50_000, 1_000)
+    ]
+
+    for alumnos, materias in casos_prueba:
+        al_target = min(320, alumnos - 1)
+        mat_target = min(4, materias - 1)
+        benchmark_matriz(num_alumnos=alumnos, num_materias=materias, alumno_id=al_target, materia_id=mat_target)
+
+if __name__ == "__main__":
+    main()
