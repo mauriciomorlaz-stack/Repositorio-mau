@@ -1,0 +1,208 @@
+import tkinter as tk
+from tkinter import messagebox
+
+
+class StackVisualizer:
+
+  def __init__(self, root):
+    self.root = root
+    self.root.title("Visualizador Gráfico de Pila (Stack - LIFO)")
+    self.root.geometry("500x550")
+    self.root.config(bg="#f0f4f8")
+
+    self.stack = []
+    self.max_size = 8
+
+    # Título principal
+    title_label = tk.Label(
+        root,
+        text="Simulador Gráfico de Pila (LIFO)",
+        font=("Arial", 16, "bold"),
+        bg="#f0f4f8",
+        fg="#333",
+    )
+    title_label.pack(pady=10)
+
+    # Panel de Controles
+    control_frame = tk.Frame(root, bg="#f0f4f8")
+    control_frame.pack(pady=10)
+
+    self.entry_val = tk.Entry(control_frame, font=("Arial", 14), width=10)
+    self.entry_val.grid(row=0, column=0, padx=5)
+
+    btn_push = tk.Button(
+        control_frame,
+        text="Apilar (Push)",
+        command=self.push,
+        bg="#4CAF50",
+        fg="white",
+        font=("Arial", 10, "bold"),
+        width=12,
+    )
+    btn_push.grid(row=0, column=1, padx=5)
+
+    btn_pop = tk.Button(
+        control_frame,
+        text="Desapilar (Pop)",
+        command=self.pop,
+        bg="#f44336",
+        fg="white",
+        font=("Arial", 10, "bold"),
+        width=12,
+    )
+    btn_pop.grid(row=0, column=2, padx=5)
+
+    # Panel secundario
+    extra_frame = tk.Frame(root, bg="#f0f4f8")
+    extra_frame.pack(pady=5)
+
+    btn_peek = tk.Button(
+        extra_frame,
+        text="Ver Tope (Peek)",
+        command=self.peek,
+        bg="#2196F3",
+        fg="white",
+        font=("Arial", 10, "bold"),
+        width=12,
+    )
+    btn_peek.pack(side=tk.LEFT, padx=5)
+
+    btn_clear = tk.Button(
+        extra_frame,
+        text="Limpiar Pila",
+        command=self.clear_stack,
+        bg="#ff9800",
+        fg="white",
+        font=("Arial", 10, "bold"),
+        width=12,
+    )
+    btn_clear.pack(side=tk.LEFT, padx=5)
+
+    # Lienzo (Canvas)
+    self.canvas = tk.Canvas(
+        root, width=250, height=330, bg="white", highlightthickness=1
+    )
+    self.canvas.pack(pady=15)
+
+    # Etiqueta de Estado
+    self.status_label = tk.Label(
+        root,
+        text="Pila vacía. Ingresa un valor para comenzar.",
+        font=("Arial", 10, "italic"),
+        bg="#f0f4f8",
+        fg="#555",
+    )
+    self.status_label.pack(pady=5)
+
+    self.draw_stack()
+
+  def push(self):
+    val = self.entry_val.get().strip()
+    if not val:
+      messagebox.showwarning(
+          "Advertencia", "Por favor ingresa un valor para apilar."
+      )
+      return
+    if len(self.stack) >= self.max_size:
+      messagebox.showerror(
+          "Error de Desbordamiento", "¡La pila está llena (Overflow)!"
+      )
+      return
+
+    self.stack.append(val)
+    self.entry_val.delete(0, tk.END)
+    self.status_label.config(text=f"Elemento '{val}' agregado exitosamente.")
+    self.draw_stack()
+
+  def pop(self):
+    if not self.stack:
+      messagebox.showerror(
+          "Error de Subdesbordamiento",
+          "¡La pila está vacía (Underflow)! No hay elementos que desapilar.",
+      )
+      return
+
+    val = self.stack.pop()
+    self.status_label.config(text=f"Elemento '{val}' removido del tope.")
+    self.draw_stack()
+
+  def peek(self):
+    if not self.stack:
+      messagebox.showinfo("Información", "La pila está vacía.")
+      return
+    val = self.stack[-1]
+    messagebox.showinfo(
+        "Tope de la Pila (Peek)", f"El elemento en el tope es: {val}"
+    )
+
+  def clear_stack(self):
+    self.stack.clear()
+    self.status_label.config(text="La pila ha sido vaciada.")
+    self.draw_stack()
+
+  def draw_stack(self):
+    self.canvas.delete("all")
+    width = 250
+    height = 330
+    box_height = 32
+    box_width = 160
+    start_x = (width - box_width) / 2
+    start_y = height - 20
+
+    # Contenedor base
+    self.canvas.create_rectangle(
+        start_x - 5,
+        start_y + 2,
+        start_x + box_width + 5,
+        start_y + 6,
+        fill="#333",
+    )
+    self.canvas.create_line(
+        start_x - 5,
+        start_y + 2,
+        start_x - 5,
+        start_y - (self.max_size * box_height) - 10,
+        width=3,
+        fill="#333",
+    )
+    self.canvas.create_line(
+        start_x + box_width + 5,
+        start_y + 2,
+        start_x + box_width + 5,
+        start_y - (self.max_size * box_height) - 10,
+        width=3,
+        fill="#333",
+    )
+
+    # Elementos
+    for i, item in enumerate(self.stack):
+      y1 = start_y - ((i + 1) * box_height)
+      y2 = start_y - (i * box_height)
+      fill_color = "#4CAF50" if i == len(self.stack) - 1 else "#90CAF9"
+
+      self.canvas.create_rectangle(
+          start_x, y1, start_x + box_width, y2, fill=fill_color, outline="#fff", width=2
+      )
+      self.canvas.create_text(
+          start_x + (box_width / 2),
+          y1 + (box_height / 2),
+          text=str(item),
+          font=("Arial", 11, "bold"),
+          fill="white" if i == len(self.stack) - 1 else "#333",
+      )
+
+    if self.stack:
+      top_y = start_y - (len(self.stack) * box_height)
+      self.canvas.create_text(
+          start_x + box_width + 35,
+          top_y + (box_height / 2),
+          text="<-- TOP",
+          font=("Arial", 10, "bold"),
+          fill="#f44336",
+      )
+
+
+if __name__ == "__main__":
+  root = tk.Tk()
+  app = StackVisualizer(root)
+  root.mainloop()
