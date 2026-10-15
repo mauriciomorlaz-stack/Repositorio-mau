@@ -1,0 +1,193 @@
+import tkinter as tk
+from tkinter import messagebox
+import time
+
+# ==========================================
+# 1. CLASE STACK (PILA)
+# ==========================================
+class Stack:
+    """Clase que representa una Pila (Stack) basada en la estructura LIFO."""
+    def __init__(self, nombre=""):
+        self.items = []
+        self.nombre = nombre
+
+    def is_empty(self):
+        """Devuelve True si la pila está vacía, False en caso contrario."""
+        return len(self.items) == 0
+
+    def push(self, item):
+        """Agrega un elemento en la cima de la pila."""
+        self.items.append(item)
+
+    def pop(self):
+        """Extrae y devuelve el elemento de la cima de la pila."""
+        if not self.is_empty():
+            return self.items.pop()
+        raise IndexError("La pila está vacía")
+
+    def peek(self):
+        """Devuelve el elemento de la cima sin extraerlo."""
+        if not self.is_empty():
+            return self.items[-1]
+        return None
+
+    def size(self):
+        """Devuelve el número de elementos en la pila."""
+        return len(self.items)
+
+
+# ==========================================
+# 2. INTERFAZ GRÁFICA CON TKINTER
+# ==========================================
+class HanoiApp:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Torre de Hanoi - Estructuras Lineales")
+        self.root.geometry("800x550")
+        self.root.config(bg="#f0f0f0")
+
+        self.n_discos = 5  # Número por defecto
+        self.movimientos = 0
+        
+        # Variable de control para el Spinbox (Soluciona el error .set())
+        self.spin_val = tk.StringVar(value=str(self.n_discos))
+
+        # Pilas de la Torre de Hanoi
+        self.origen = Stack("Origen (A)")
+        self.auxiliar = Stack("Auxiliar (B)")
+        self.destino = Stack("Destino (C)")
+
+        self.crear_widgets()
+        self.reiniciar_juego()
+
+    def crear_widgets(self):
+        # Panel superior de controles
+        frame_controles = tk.Frame(self.root, bg="#f0f0f0", pady=10)
+        frame_controles.pack(fill=tk.X)
+
+        tk.Label(frame_controles, text="Discos (3-8):", font=("Arial", 11, "bold"), bg="#f0f0f0").pack(side=tk.LEFT, padx=10)
+        
+        # Se enlaza la variable textvariable para controlar el valor de forma segura
+        self.spin_discos = tk.Spinbox(
+            frame_controles, 
+            from_=3, 
+            to=8, 
+            width=5, 
+            font=("Arial", 11), 
+            textvariable=self.spin_val, 
+            command=self.cambiar_discos
+        )
+        self.spin_discos.pack(side=tk.LEFT, padx=5)
+
+        self.btn_resolver = tk.Button(frame_controles, text="Resolver Automático", bg="#4CAF50", fg="white", font=("Arial", 10, "bold"), command=self.iniciar_resolucion)
+        self.btn_resolver.pack(side=tk.LEFT, padx=15)
+
+        self.btn_reset = tk.Button(frame_controles, text="Reiniciar", bg="#f44336", fg="white", font=("Arial", 10, "bold"), command=self.reiniciar_juego)
+        self.btn_reset.pack(side=tk.LEFT, padx=5)
+
+        self.lbl_info = tk.Label(frame_controles, text="Movimientos: 0", font=("Arial", 12, "bold"), bg="#f0f0f0", fg="#333")
+        self.lbl_info.pack(side=tk.RIGHT, padx=20)
+
+        # Canvas para dibujar las torres y discos
+        self.canvas = tk.Canvas(self.root, width=760, height=400, bg="white", highlightthickness=1, highlightbackground="#ccc")
+        self.canvas.pack(pady=10)
+
+    def cambiar_discos(self):
+        try:
+            val = int(self.spin_val.get())
+            if 3 <= val <= 8:
+                self.n_discos = val
+                self.reiniciar_juego()
+        except ValueError:
+            pass
+
+    def reiniciar_juego(self):
+        self.movimientos = 0
+        self.origen = Stack("Origen (A)")
+        self.auxiliar = Stack("Auxiliar (B)")
+        self.destino = Stack("Destino (C)")
+
+        # Llenar la pila de origen
+        for d in range(self.n_discos, 0, -1):
+            self.origen.push(d)
+
+        self.actualizar_canvas()
+
+    def actualizar_canvas(self):
+        self.canvas.delete("all")
+        
+        postes_x = [150, 400, 650]
+        base_y = 350
+        poste_alto = 250
+        
+        # Dibujar base horizontal
+        self.canvas.create_rectangle(50, base_y, 750, base_y + 15, fill="#8B4513")
+
+        # Dibujar los 3 postes verticales
+        for x in postes_x:
+            self.canvas.create_rectangle(x - 6, base_y - poste_alto, x + 6, base_y, fill="#8B4513")
+
+        # Dibujar las torres (pilas)
+        todas_las_torres = [self.origen, self.auxiliar, self.destino]
+        
+        for i, torre in enumerate(todas_las_torres):
+            x_centro = postes_x[i]
+            self.canvas.create_text(x_centro, base_y + 30, text=torre.nombre, font=("Arial", 10, "bold"))
+            
+            for idx, disco_val in enumerate(torre.items):
+                ancho = 30 + (disco_val * 20)
+                alto = 22
+                y = base_y - (idx + 1) * (alto + 2)
+                x1 = x_centro - ancho // 2
+                x2 = x_centro + ancho // 2
+                y1 = y
+                y2 = y + alto
+
+                self.canvas.create_rectangle(x1, y1, x2, y2, fill="#5c6bc0", outline="#1a237e", width=2)
+                self.canvas.create_text(x_centro, y1 + 11, text=str(disco_val), fill="white", font=("Arial", 10, "bold"))
+
+        self.lbl_info.config(text=f"Movimientos: {self.movimientos} | Óptimo: {(2**self.n_discos)-1}")
+        self.root.update()
+
+    def iniciar_resolucion(self):
+        self.reiniciar_juego()
+        self.btn_resolver.config(state=tk.DISABLED)
+        self.spin_discos.config(state=tk.DISABLED)
+        
+        tiempo_inicio = time.time()
+        self.resolver_hanoi_animado(self.n_discos, self.origen, self.destino, self.auxiliar)
+        tiempo_fin = time.time()
+        duracion = tiempo_fin - tiempo_inicio
+        
+        self.btn_resolver.config(state=tk.NORMAL)
+        self.spin_discos.config(state=tk.NORMAL)
+        
+        messagebox.showinfo("Completado", f"¡Torre resuelta con éxito!\nTiempo transcurrido: {duracion:.4f} segundos")
+
+    def resolver_hanoi_animado(self, n, origen, destino, auxiliar):
+        if n == 1:
+            disco = origen.pop()
+            destino.push(disco)
+            self.movimientos += 1
+            self.actualizar_canvas()
+            time.sleep(0.4)
+            return
+
+        self.resolver_hanoi_animado(n - 1, origen, auxiliar, destino)
+        
+        disco = origen.pop()
+        destino.push(disco)
+        self.movimientos += 1
+        self.actualizar_canvas()
+        time.sleep(0.4)
+
+        self.resolver_hanoi_animado(n - 1, auxiliar, destino, origen)
+
+
+# ==========================================
+# 3. PROGRAMA PRINCIPAL
+# ==========================================
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = HanoiApp(root)
+    root.mainloop()
