@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estructura de Datos - Simulación de Colas</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0f6ff',
+                            100: '#e0edff',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            900: '#1e3a8a',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .queue-item-enter {
+            animation: slideInRight 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(30px) scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0) scale(1);
+            }
+        }
+
+        .pulse-subtle {
+            animation: pulseGlow 2s infinite ease-in-out;
+        }
+        @keyframes pulseGlow {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); }
+            50% { box-shadow: 0 0 0 10px rgba(59, 130, 246, 0); }
+        }
+
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen font-sans antialiased flex flex-col justify-between">
+
+    <!-- Header Section -->
+    <header class="border-b border-slate-800 bg-slate-950/80 backdrop-blur sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-blue-500/30">
+                    <i class="fa-solid fa-layer-group"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
+                        Laboratorio de Estructuras de Datos
+                    </h1>
+                    <p class="text-xs text-slate-400">Implementación Práctica de Colas (Queues) en Python</p>
+                </div>
+            </div>
+
+            <!-- Navigation Tabs -->
+            <nav class="flex space-x-1 bg-slate-900 p-1 rounded-xl border border-slate-800">
+                <button id="tab1-btn" onclick="switchTab(1)" class="px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg transition-all duration-200 flex items-center gap-2 bg-blue-600 text-white shadow-md">
+                    <i class="fa-solid fa-calculator"></i> Ejercicio 1: Suma de Colas
+                </button>
+                <button id="tab2-btn" onclick="switchTab(2)" class="px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/50 transition-all duration-200 flex items-center gap-2">
+                    <i class="fa-solid fa-users-gear"></i> Ejercicio 2: Colas de Atención
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full flex-grow">
+        
+        <!-- EXERCISE 1: SUM OF QUEUES -->
+        <section id="exercise1" class="space-y-6">
+            <div class="bg-slate-800/60 rounded-2xl p-6 border border-slate-700/60 backdrop-blur-sm shadow-xl">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-700/50">
+                    <div>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-500/10 text-blue-400 border border-blue-500/20 mb-2">
+                            Ejercicio #1
+                        </span>
+                        <h2 class="text-2xl font-bold text-white">Suma Elemento a Elemento de 2 Colas</h2>
+                        <p class="text-slate-400 text-sm mt-1">
+                            Suma iterativamente los elementos frontales de dos colas (<code class="text-blue-300 font-mono">Cola A</code> y <code class="text-emerald-300 font-mono">Cola B</code>) generando una nueva <code class="text-purple-300 font-mono">Cola Resultado</code>.
+                        </p>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <button onclick="loadPresetData()" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs font-semibold rounded-xl border border-slate-600 transition flex items-center gap-2">
+                            <i class="fa-solid fa-arrows-rotate"></i> Cargar Datos del Ejemplo
+                        </button>
+                        <button onclick="clearQueuesEx1()" class="px-4 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 text-xs font-semibold rounded-xl transition flex items-center gap-2">
+                            <i class="fa-solid fa-trash-can"></i> Limpiar
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Input Controls Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    <!-- Queue A Control -->
+                    <div class="bg-slate-900/80 rounded-xl p-4 border border-blue-500/30">
+                        <label class="text-xs font-semibold text-blue-400 uppercase tracking-wider block mb-2">
+                            <i class="fa-solid fa-plus-circle"></i> Agregar Elemento a Cola A
+                        </label>
+                        <div class="flex gap-2">
+                            <input type="number" id="inputA" placeholder="Ej: 5" class="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500 flex-1 font-mono">
+                            <button onclick="enqueueA()" class="bg-blue-600 hover:bg-blue-500 text-white font-medium px-4 py-2 rounded-lg text-sm transition flex items-center gap-1">
+                                <i class="fa-solid fa-right-to-bracket"></i> Encolar A
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Queue B Control -->
+                    <div class="bg-slate-900/80 rounded-xl p-4 border border-emerald-500/30">
+                        <label class="text-xs font-semibold text-emerald-400 uppercase tracking-wider block mb-2">
+                            <i class="fa-solid fa-plus-circle"></i> Agregar Elemento a Cola B
+                        </label>
+                        <div class="flex gap-2">
+                            <input type="number" id="inputB" placeholder="Ej: 10" class="bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 flex-1 font-mono">
+                            <button onclick="enqueueB()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-medium px-4 py-2 rounded-lg text-sm transition flex items-center gap-1">
+                                <i class="fa-solid fa-right-to-bracket"></i> Encolar B
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Visual Queues Representation -->
+                <div class="space-y-4 mb-8">
+                    <!-- Queue A Visual -->
+                    <div>
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-xs font-bold text-blue-400 tracking-wider">COLA A (Entrada)</span>
+                            <span class="text-xs text-slate-400" id="countA">0 elementos</span>
+                        </div>
+                        <div id="visualA" class="bg-slate-950 rounded-xl p-3 min-h-[64px] border border-slate-800 flex items-center gap-2 overflow-x-auto">
+                            <span class="text-slate-500 text-xs italic px-2">Cola A vacía</span>
+                        </div>
+                    </div>
+
+                    <!-- Queue B Visual -->
+                    <div>
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-xs font-bold text-emerald-400 tracking-wider">COLA B (Entrada)</span>
+                            <span class="text-xs text-slate-400" id="countB">0 elementos</span>
+                        </div>
+                        <div id="visualB" class="bg-slate-950 rounded-xl p-3 min-h-[64px] border border-slate-800 flex items-center gap-2 overflow-x-auto">
+                            <span class="text-slate-500 text-xs italic px-2">Cola B vacía</span>
+                        </div>
+                    </div>
+
+                    <!-- Process Action Button -->
+                    <div class="pt-2 flex justify-center">
+                        <button onclick="processSumQueues()" class="w-full sm:w-auto px-8 py-3 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-bold rounded-xl shadow-lg shadow-indigo-500/25 transition transform active:scale-95 flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> Sumar Colas Elemento a Elemento
+                        </button>
+                    </div>
+
+                    <!-- Queue Result Visual -->
+                    <div>
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-xs font-bold text-purple-400 tracking-wider">COLA RESULTADO</span>
+                            <span class="text-xs text-slate-400" id="countRes">0 elementos</span>
+                        </div>
+                        <div id="visualRes" class="bg-slate-950 rounded-xl p-3 min-h-[64px] border border-purple-900/40 flex items-center gap-2 overflow-x-auto">
+                            <span class="text-slate-500 text-xs italic px-2">Aún no se ha realizado la suma</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Table Output -->
+                <div class="mt-6 bg-slate-900/90 rounded-xl p-4 border border-slate-800">
+                    <h3 class="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
+                        <i class="fa-solid fa-table"></i> Vista Tabular de Coincidencia por Posición
+                    </h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm font-mono">
+                            <thead class="text-xs uppercase bg-slate-800/80 text-slate-400 border-b border-slate-700">
+                                <tr>
+                                    <th class="px-4 py-2.5">Índice</th>
+                                    <th class="px-4 py-2.5 text-blue-400">Cola A</th>
+                                    <th class="px-4 py-2.5 text-slate-500">+</th>
+                                    <th class="px-4 py-2.5 text-emerald-400">Cola B</th>
+                                    <th class="px-4 py-2.5 text-slate-500">=</th>
+                                    <th class="px-4 py-2.5 text-purple-400">Cola Resultado</th>
+                                </tr>
+                            </thead>
+                            <tbody id="resultTableBody" class="divide-y divide-slate-800">
+                                <tr>
+                                    <td colspan="6" class="px-4 py-4 text-center text-slate-500 text-xs font-sans">
+                                        Ingresa valores o carga el ejemplo para visualizar la tabla.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- EXERCISE 2: SERVICE QUEUES SYSTEM -->
+        <section id="exercise2" class="space-y-6 hidden">
+            <div class="bg-slate-800/60 rounded-2xl p-6 border border-slate-700/60 backdrop-blur-sm shadow-xl">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-700/50">
+                    <div>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 mb-2">
+                            Ejercicio #2
+                        </span>
+                        <h2 class="text-2xl font-bold text-white">Sistema de Atención - Compañía de Seguros</h2>
+                        <p class="text-slate-400 text-sm mt-1">
+                            Simulación interactiva mediante comandos de consola (<code class="text-emerald-300 font-mono">C &lt;servicio&gt;</code> para llegada, <code class="text-amber-300 font-mono">A &lt;servicio&gt;</code> para atención) o botones visuales.
+                        </p>
+                    </div>
+                    
+                    <!-- Quick Stats -->
+                    <div class="flex items-center gap-3 bg-slate-900/80 p-3 rounded-xl border border-slate-800">
+                        <div class="text-center px-3 border-r border-slate-800">
+                            <span class="block text-2xl font-extrabold text-blue-400 font-mono" id="statTotalArrivals">0</span>
+                            <span class="text-[10px] text-slate-400 uppercase tracking-wider">Llegadas</span>
+                        </div>
+                        <div class="text-center px-3">
+                            <span class="block text-2xl font-extrabold text-emerald-400 font-mono" id="statTotalServed">0</span>
+                            <span class="text-[10px] text-slate-400 uppercase tracking-wider">Atendidos</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Command Bar / Quick Action Interface -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                    
+                    <!-- Console Command Box -->
+                    <div class="lg:col-span-2 bg-slate-900 rounded-xl p-4 border border-slate-800 shadow-inner">
+                        <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2 flex items-center justify-between">
+                            <span><i class="fa-solid fa-terminal text-blue-400"></i> Entrada de Consola (Comandos)</span>
+                            <span class="text-[10px] text-slate-500 font-normal">Ejemplos: 'C 1', 'A 1', 'C 2'</span>
+                        </label>
+                        <form onsubmit="handleCommandSubmit(event)" class="flex gap-2">
+                            <div class="relative flex-1">
+                                <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-500 font-mono text-sm">&gt;</span>
+                                <input type="text" id="consoleInput" placeholder="Escriba C 1, A 1..." class="w-full bg-slate-950 border border-slate-700 rounded-lg pl-8 pr-3 py-2 text-sm text-white font-mono focus:outline-none focus:border-blue-500 uppercase">
+                            </div>
+                            <button type="submit" class="bg-blue-600 hover:bg-blue-500 text-white font-medium px-5 py-2 rounded-lg text-sm transition flex items-center gap-2">
+                                Executar <i class="fa-solid fa-play text-xs"></i>
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Quick Button Panel -->
+                    <div class="bg-slate-900 rounded-xl p-4 border border-slate-800 flex flex-col justify-between">
+                        <label class="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2">
+                            Acciones Rápidas (Servicio 1)
+                        </label>
+                        <div class="flex gap-2">
+                            <button onclick="executeAction('C', 1)" class="flex-1 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 py-2 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1">
+                                <i class="fa-solid fa-user-plus"></i> C 1 (Llegada)
+                            </button>
+                            <button onclick="executeAction('A', 1)" class="flex-1 bg-amber-600/20 hover:bg-amber-600/30 text-amber-400 border border-amber-500/30 py-2 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-1">
+                                <i class="fa-solid fa-bullhorn"></i> A 1 (Atender)
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Live Service Queues Visual Grid -->
+                <div class="mb-8">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-sm font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                            <i class="fa-solid fa-network-wired text-indigo-400"></i> Estado de Colas de Servicio en Tiempo Real
+                        </h3>
+                        <button onclick="addNewService()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 px-3 py-1.5 rounded-lg transition flex items-center gap-1">
+                            <i class="fa-solid fa-plus text-emerald-400"></i> Añadir Nuevo Servicio
+                        </button>
+                    </div>
+
+                    <!-- Services Grid Container -->
+                    <div id="servicesGrid" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <!-- Dynamic Service Cards insertion via JS -->
+                    </div>
+                </div>
+
+                <!-- Event History Console Output -->
+                <div class="bg-slate-950 rounded-xl p-4 border border-slate-800">
+                    <div class="flex items-center justify-between mb-3 border-b border-slate-800 pb-2">
+                        <span class="text-xs font-mono text-slate-400 flex items-center gap-2">
+                            <i class="fa-solid fa-clock-rotate-left text-slate-500"></i> HISTORIAL DE EVENTOS Y SALIDA DE CONSOLA
+                        </span>
+                        <button onclick="clearHistoryLog()" class="text-[11px] text-slate-500 hover:text-slate-300 transition">
+                            Limpiar Historial
+                        </button>
+                    </div>
+                    <div id="historyLog" class="font-mono text-xs space-y-1.5 max-h-48 overflow-y-auto pr-2">
+                        <p class="text-slate-500 italic">[Sistema inicializado. Listo para procesar comandos de colas de servicios.]</p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-800 py-4 bg-slate-950 text-center text-xs text-slate-500">
+        <p>Estructuras de Datos - Algoritmos de Colas (FIFO) | Solución Lista para GitHub y Teams</p>
+    </footer>
+
+    <!-- Application Script -->
+    <script>
+        // --- GLOBAL APP STATE ---
+        let queueA = [];
+        let queueB = [];
+        let queueRes = [];
+
+        // Exercise 2 State
+        let services = {
+            1: { queue: [], nextCounter: 1, currentServing: null },
+            2: { queue: [], nextCounter: 1, currentServing: null },
+            3: { queue: [], nextCounter: 1, currentServing: null }
+        };
+        let totalArrivals = 0;
+        let totalServed = 0;
+
+        // --- TAB SWITCHING LOGIC ---
+        function switchTab(tabNum) {
+            const btn1 = document.getElementById('tab1-btn');
+            const btn2 = document.getElementById('tab2-btn');
+            const ex1 = document.getElementById('exercise1');
+            const ex2 = document.getElementById('exercise2');
+
+            if (tabNum === 1) {
+                ex1.classList.remove('hidden');
+                ex2.classList.add('hidden');
+                btn1.className = "px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg transition-all duration-200 flex items-center gap-2 bg-blue-600 text-white shadow-md";
+                btn2.className = "px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/50 transition-all duration-200 flex items-center gap-2";
+            } else {
+                ex1.classList.add('hidden');
+                ex2.classList.remove('hidden');
+                btn2.className = "px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg transition-all duration-200 flex items-center gap-2 bg-emerald-600 text-white shadow-md";
+                btn1.className = "px-4 py-2 text-xs sm:text-sm font-semibold rounded-lg text-slate-400 hover:text-white hover:bg-slate-800/50 transition-all duration-200 flex items-center gap-2";
+                renderServices();
+            }
+        }
+
+        // ==========================================
+        // EXERCISE 1 LOGIC
+        // ==========================================
+        function renderVisualQueuesEx1() {
+            // Render Queue A
+            const visA = document.getElementById('visualA');
+            document.getElementById('countA').innerText = `${queueA.length} elemento(s)`;
+            if (queueA.length === 0) {
+                visA.innerHTML = `<span class="text-slate-500 text-xs italic px-2">Cola A vacía</span>`;
+            } else {
+                visA.innerHTML = queueA.map((val, idx) => `
+                    <div class="queue-item-enter bg-blue-600/20 border border-blue-500/40 text-blue-300 font-mono text-sm px-3 py-1.5 rounded-lg flex items-center gap-2">
+                        <span class="text-[10px] text-blue-400/60 font-sans">#${idx+1}</span>
+                        <span class="font-bold">${val}</span>
+                    </div>
+                `).join('');
+            }
+
+            // Render Queue B
+            const visB = document.getElementById('visualB');
+            document.getElementById('countB').innerText = `${queueB.length} elemento(s)`;
+            if (queueB.length === 0) {
+                visB.innerHTML = `<span class="text-slate-500 text-xs italic px-2">Cola B vacía</span>`;
+            } else {
+                visB.innerHTML = queueB.map((val, idx) => `
+                    <div class="queue-item-enter bg-emerald-600/20 border border-emerald-500/40 text-emerald-300 font-mono text-sm px-3 py-1.5 rounded-lg flex items-center gap-2">
+                        <span class="text-[10px] text-emerald-400/60 font-sans">#${idx+1}</span>
+                        <span class="font-bold">${val}</span>
+                    </div>
+                `).join('');
+            }
+
+            // Render Queue Result
+            const visRes = document.getElementById('visualRes');
+            document.getElementById('countRes').innerText = `${queueRes.length} elemento(s)`;
+            if (queueRes.length === 0) {
+                visRes.innerHTML = `<span class="text-slate-500 text-xs italic px-2">Aún no se ha realizado la suma</span>`;
+            } else {
+                visRes.innerHTML = queueRes.map((val, idx) => `
+                    <div class="queue-item-enter bg-purple-600/20 border border-purple-500/40 text-purple-300 font-mono text-sm px-3 py-1.5 rounded-lg flex items-center gap-2 shadow-lg shadow-purple-900/20">
+                        <span class="text-[10px] text-purple-400/60 font-sans">#${idx+1}</span>
+                        <span class="font-bold">${val}</span>
+                    </div>
+                `).join('');
+            }
+
+            // Render Table
+            const tbody = document.getElementById('resultTableBody');
+            if (queueA.length === 0 && queueB.length === 0 && queueRes.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="px-4 py-4 text-center text-slate-500 text-xs font-sans">Ingresa valores o carga el ejemplo para visualizar la tabla.</td></tr>`;
+                return;
+            }
+
+            const maxLen = Math.max(queueA.length, queueB.length, queueRes.length);
+            let html = '';
+            for (let i = 0; i < maxLen; i++) {
+                const valA = queueA[i] !== undefined ? queueA[i] : 0;
+                const valB = queueB[i] !== undefined ? queueB[i] : 0;
+                const valRes = queueRes[i] !== undefined ? queueRes[i] : '-';
+
+                html += `
+                    <tr class="hover:bg-slate-800/40 transition">
+                        <td class="px-4 py-2.5 text-slate-500 text-xs">Posición [${i}]</td>
+                        <td class="px-4 py-2.5 font-bold text-blue-400">${valA}</td>
+                        <td class="px-4 py-2.5 text-slate-500">+</td>
+                        <td class="px-4 py-2.5 font-bold text-emerald-400">${valB}</td>
+                        <td class="px-4 py-2.5 text-slate-500">=</td>
+                        <td class="px-4 py-2.5 font-bold text-purple-400">${valRes}</td>
+                    </tr>
+                `;
+            }
+            tbody.innerHTML = html;
+        }
+
+        function enqueueA() {
+            const input = document.getElementById('inputA');
+            const val = parseInt(input.value);
+            if (!isNaN(val)) {
+                queueA.push(val);
+                input.value = '';
+                renderVisualQueuesEx1();
+            }
+        }
+
+        function enqueueB() {
+            const input = document.getElementById('inputB');
+            const val = parseInt(input.value);
+            if (!isNaN(val)) {
+                queueB.push(val);
+                input.value = '';
+                renderVisualQueuesEx1();
+            }
+        }
+
+        function loadPresetData() {
+            queueA = [3, 4, 2, 8, 12];
+            queueB = [6, 2, 9, 11, 3];
+            queueRes = [];
+            renderVisualQueuesEx1();
+        }
+
+        function clearQueuesEx1() {
+            queueA = [];
+            queueB = [];
+            queueRes = [];
+            renderVisualQueuesEx1();
+        }
+
+        function processSumQueues() {
+            if (queueA.length === 0 && queueB.length === 0) {
+                alert("Por favor, ingrese elementos en las colas A o B.");
+                return;
+            }
+
+            // Algoritmo equivalente al del ejercicio Python (Suma 1 a 1)
+            queueRes = [];
+            const maxLen = Math.max(queueA.length, queueB.length);
+            for (let i = 0; i < maxLen; i++) {
+                const valA = queueA[i] !== undefined ? queueA[i] : 0;
+                const valB = queueB[i] !== undefined ? queueB[i] : 0;
+                queueRes.push(valA + valB);
+            }
+
+            renderVisualQueuesEx1();
+        }
+
+        // ==========================================
+        // EXERCISE 2 LOGIC
+        // ==========================================
+        function renderServices() {
+            const grid = document.getElementById('servicesGrid');
+            grid.innerHTML = '';
+
+            Object.keys(services).forEach(sId => {
+                const s = services[sId];
+                const serviceCard = document.createElement('div');
+                serviceCard.className = "bg-slate-900 rounded-xl p-4 border border-slate-800 flex flex-col justify-between shadow-lg";
+
+                const currentClientDisplay = s.currentServing 
+                    ? `<span class="px-3 py-1 bg-amber-500/20 text-amber-300 border border-amber-500/30 rounded-lg font-mono font-bold text-sm pulse-subtle">${s.currentServing}</span>`
+                    : `<span class="text-xs text-slate-500 italic">Esperando llamado...</span>`;
+
+                const queueItemsDisplay = s.queue.length === 0
+                    ? `<span class="text-xs text-slate-500 italic block py-2">Sin clientes en espera</span>`
+                    : s.queue.map((ticket, idx) => `
+                        <div class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-800 border border-slate-700 text-slate-200 font-mono text-xs rounded-md">
+                            <span class="text-[10px] text-slate-500">#${idx+1}</span>
+                            <span class="font-semibold text-emerald-400">${ticket}</span>
+                        </div>
+                    `).join(' ');
+
+                serviceCard.innerHTML = `
+                    <div>
+                        <!-- Header -->
+                        <div class="flex justify-between items-center pb-3 mb-3 border-b border-slate-800">
+                            <div class="flex items-center gap-2">
+                                <div class="w-7 h-7 rounded-lg bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400 font-bold text-xs">
+                                    S${sId}
+                                </div>
+                                <h4 class="font-bold text-sm text-slate-200">Servicio ${sId}</h4>
+                            </div>
+                            <span class="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-400">
+                                ${s.queue.length} en espera
+                            </span>
+                        </div>
+
+                        <!-- Current Serving Box -->
+                        <div class="bg-slate-950 p-3 rounded-lg border border-slate-800/80 mb-3 text-center">
+                            <span class="text-[10px] uppercase tracking-wider text-slate-500 block mb-1">Atendiendo Ahora</span>
+                            ${currentClientDisplay}
+                        </div>
+
+                        <!-- Queue List -->
+                        <div class="mb-4">
+                            <span class="text-[10px] uppercase tracking-wider text-slate-400 block mb-1.5">Cola de Espera (FIFO)</span>
+                            <div class="bg-slate-950/50 p-2.5 rounded-lg border border-slate-800/60 min-h-[50px] max-h-[100px] overflow-y-auto flex flex-wrap gap-1.5 items-center">
+                                ${queueItemsDisplay}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Direct Controls -->
+                    <div class="flex gap-2 pt-2 border-t border-slate-800/80">
+                        <button onclick="executeAction('C', ${sId})" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white py-1.5 px-2 rounded-lg text-xs font-semibold transition flex items-center justify-center gap-1">
+                            <i class="fa-solid fa-user-plus text-[10px]"></i> Llegada (C)
+                        </button>
+                        <button onclick="executeAction('A', ${sId})" class="flex-1 bg-amber-600 hover:bg-amber-500 text-white py-1.5 px-2 rounded-lg text-xs font-semibold transition flex items-center justify-center gap-1">
+                            <i class="fa-solid fa-bullhorn text-[10px]"></i> Atender (A)
+                        </button>
+                    </div>
+                `;
+
+                grid.appendChild(serviceCard);
+            });
+
+            // Update Header Counters
+            document.getElementById('statTotalArrivals').innerText = totalArrivals;
+            document.getElementById('statTotalServed').innerText = totalServed;
+        }
+
+        function executeAction(type, serviceId) {
+            if (!services[serviceId]) {
+                services[serviceId] = { queue: [], nextCounter: 1, currentServing: null };
+            }
+
+            const logContainer = document.getElementById('historyLog');
+            const timestamp = new Date().toLocaleTimeString();
+
+            if (type === 'C') {
+                // Customer arrival
+                const ticketNumber = `S${serviceId}-${String(services[serviceId].nextCounter).padStart(3, '0')}`;
+                services[serviceId].queue.push(ticketNumber);
+                services[serviceId].nextCounter++;
+                totalArrivals++;
+
+                // Add log entry
+                const logEntry = document.createElement('p');
+                logEntry.className = 'text-emerald-400';
+                logEntry.innerHTML = `<span class="text-slate-500">[${timestamp}]</span> <strong>[Comando C ${serviceId}]</strong> -&gt; Asignado ticket <span class="underline">${ticketNumber}</span> a Cola Servicio ${serviceId}.`;
+                logContainer.prepend(logEntry);
+
+            } else if (type === 'A') {
+                // Customer attention
+                if (services[serviceId].queue.length === 0) {
+                    const logEntry = document.createElement('p');
+                    logEntry.className = 'text-rose-400';
+                    logEntry.innerHTML = `<span class="text-slate-500">[${timestamp}]</span> <strong>[Comando A ${serviceId}]</strong> -&gt; <i class="fa-solid fa-circle-exclamation"></i> La cola del Servicio ${serviceId} está VACÍA. Ningún cliente fue llamado.`;
+                    logContainer.prepend(logEntry);
+                } else {
+                    const servedTicket = services[serviceId].queue.shift(); // Dequeue
+                    services[serviceId].currentServing = servedTicket;
+                    totalServed++;
+
+                    const logEntry = document.createElement('p');
+                    logEntry.className = 'text-amber-300 font-bold';
+                    logEntry.innerHTML = `<span class="text-slate-500 font-normal">[${timestamp}]</span> <strong>[Comando A ${serviceId}]</strong> -&gt; <i class="fa-solid fa-bullhorn"></i> Llamando al Cliente <span class="bg-amber-400/20 px-1 rounded border border-amber-400/30">${servedTicket}</span> para el Servicio ${serviceId}.`;
+                    logContainer.prepend(logEntry);
+                }
+            }
+
+            renderServices();
+        }
+
+        function handleCommandSubmit(e) {
+            e.preventDefault();
+            const input = document.getElementById('consoleInput');
+            const rawVal = input.value.trim().toUpperCase();
+            
+            if (!rawVal) return;
+
+            const parts = rawVal.split(/\s+/);
+            if (parts.length === 2 && (parts[0] === 'C' || parts[0] === 'A')) {
+                const action = parts[0];
+                const sId = parseInt(parts[1]);
+
+                if (!isNaN(sId) && sId > 0 && sId <= 20) {
+                    executeAction(action, sId);
+                    input.value = '';
+                } else {
+                    alert("Por favor ingrese un número de servicio válido (1 al 20).");
+                }
+            } else {
+                alert("Comando no reconocido. Use la sintaxis: 'C 1' o 'A 1'");
+            }
+        }
+
+        function addNewService() {
+            const existingKeys = Object.keys(services).map(Number);
+            const nextKey = Math.max(...existingKeys, 0) + 1;
+            services[nextKey] = { queue: [], nextCounter: 1, currentServing: null };
+            renderServices();
+        }
+
+        function clearHistoryLog() {
+            document.getElementById('historyLog').innerHTML = `<p class="text-slate-500 italic">[Historial reiniciado.]</p>`;
+        }
+
+        // Initialize on page load
+        window.onload = function() {
+            loadPresetData();
+            renderServices();
+        };
+    </script>
+</body>
+</html>
+```
+
+---
+
+### Python Tkinter Application Code (`app_gui.py`)
+
+Below is the single Python `.py` file with full graphical user interface (GUI) built using standard Python `tkinter` & `ttk`. It contains both Ejercicio 1 and Ejercicio 2 in tabbed panels with visual queues, tables, and console execution.
+
+```python:Python Desktop GUI App:app_gui.py
+"""
+========================================================================
+SISTEMA UNIFICADO DE COLAS DE ESTRUCTURAS DE DATOS (INTERFAZ GRÁFICA)
+Materia: Estructuras de Datos / Algoritmos
+========================================================================
+Este programa unifica:
+1. Ejercicio 1: Suma elemento a elemento de dos Colas.
+2. Ejercicio 2: Sistema de gestión de colas de atención para seguros (C / A).
+"""
+
+import tkinter as tk
+from tkinter import ttk, messagebox
+
+# ----------------------------------------------------------------------
+# ESTRUCTURA DE DATOS: CLASE COLA (QUEUE)
+# ----------------------------------------------------------------------
+class Cola:
+    """Implementación de una cola estándar (First-In, First-Out - FIFO)."""
+    def __init__(self):
+        self.elementos = []
+
+    def esta_vacia(self):
+        return len(self.elementos) == 0
+
+    def encolar(self, item):
+        self.elementos.append(item)
+
+    def desencolar(self):
+        if self.esta_vacia():
+            return None
+        return self.elementos.pop(0)
+
+    def tamano(self):
+        return len(self.elementos)
+
+    def obtener_elementos(self):
+        return list(self.elementos)
+
+
+# ----------------------------------------------------------------------
+# LÓGICA DEL EJERCICIO 1
+# ----------------------------------------------------------------------
+def sumar_colas(cola_a: Cola, cola_b: Cola) -> Cola:
+    """Suma los elementos uno a uno de dos colas."""
+    cola_res = Cola()
+    elementos_a = cola_a.obtener_elementos()
+    elementos_b = cola_b.obtener_elementos()
+    
+    max_len = max(len(elementos_a), len(elementos_b))
+    for i in range(max_len):
+        val_a = elementos_a[i] if i < len(elementos_a) else 0
+        val_b = elementos_b[i] if i < len(elementos_b) else 0
+        cola_res.encolar(val_a + val_b)
+        
+    return cola_res
+
+
+# ----------------------------------------------------------------------
+# APLICACIÓN PRINCIPAL TKINTER
+# ----------------------------------------------------------------------
+class AplicacionGestionColas(tk.Tk):
+    def __init__(self):
+        super().__init__()
+        self.title("Laboratorio de Colas - Ejercicios 1 y 2")
+        self.geometry("900 x 650")
+        self.minsize(800, 550)
+
+        # Configuración de estilos
+        self.style = ttk.Style(self)
+        self.style.theme_use('clam')
+        
+        # Pestañas principales
+        self.notebook = ttk.Notebook(self)
+        self.notebook.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+
+        # Tab Ejercicio 1
+        self.tab1 = ttk.Frame(self.notebook)
+        self.notebook.add(self.tab1, text=" Ejercicio 1: Suma de Colas ")
+
+        # Tab Ejercicio 2
+        self.tab2 = ttk.Frame(self.notebook)
+        self.notebook.add(self.tab2, text=" Ejercicio 2: Colas de Atención ")
+
+        # Construir interfaces de cada pestaña
+        self.construir_tab1()
+        self.construir_tab2()
+
+    # ==================================================================
+    # INTERFAZ EJERCICIO 1
+    # ==================================================================
+    def construir_tab1(self):
+        self.cola_a = Cola()
+        self.cola_b = Cola()
+        self.cola_res = Cola()
+
+        # Panel de Controles
+        frame_controles = ttk.LabelFrame(self.tab1, text=" Entradas de Datos ", padding=10)
+        frame_controles.pack(fill=tk.X, padx=10, pady=5)
+
+        # Entrada Cola A
+        ttk.Label(frame_controles, text="Valor Cola A:").grid(row=0, column=0, padx=5, pady=5)
+        self.ent_a = ttk.Entry(frame_controles, width=10)
+        self.ent_a.grid(row=0, column=1, padx=5, pady=5)
+        btn_add_a = ttk.Button(frame_controles, text="Encolar en A", command=self.encolar_a)
+        btn_add_a.grid(row=0, column=2, padx=5, pady=5)
+
+        # Entrada Cola B
+        ttk.Label(frame_controles, text="Valor Cola B:").grid(row=0, column=3, padx=5, pady=5)
+        self.ent_b = ttk.Entry(frame_controles, width=10)
+        self.ent_b.grid(row=0, column=4, padx=5, pady=5)
+        btn_add_b = ttk.Button(frame_controles, text="Encolar en B", command=self.encolar_b)
+        btn_add_b.grid(row=0, column=5, padx=5, pady=5)
+
+        # Botones de Acción
+        btn_ejemplo = ttk.Button(frame_controles, text="Cargar Ejemplo (3,4,2,8,12 + 6,2,9,11,3)", command=self.cargar_ejemplo_tab1)
+        btn_ejemplo.grid(row=1, column=0, columnspan=3, pady=10, sticky="ew", padx=5)
+
+        btn_sumar = ttk.Button(frame_controles, text="SUMAR COLAS ELEMENTO A ELEMENTO", command=self.ejecutar_suma_tab1)
+        btn_sumar.grid(row=1, column=3, columnspan=3, pady=10, sticky="ew", padx=5)
+
+        # Visualización en Tabla
+        frame_tabla = ttk.LabelFrame(self.tab1, text=" Resultado Tabular ", padding=10)
+        frame_tabla.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
+
+        columnas = ("pos", "cola_a", "cola_b", "resultado")
+        self.tabla_ex1 = ttk.Treeview(frame_tabla, columns=columnas, show="headings", height=8)
+        self.tabla_ex1.heading("pos", text="Posición [i]")
+        self.tabla_ex1.heading("cola_a", text="Cola A")
+        self.tabla_ex1.heading("cola_b", text="Cola B")
+        self.tabla_ex1.heading("resultado", text="Cola Resultado")
+
+        self.tabla_ex1.column("pos", anchor=tk.CENTER, width=100)
+        self.tabla_ex1.column("cola_a", anchor=tk.CENTER, width=150)
+        self.tabla_ex1.column("cola_b", anchor=tk.CENTER, width=150)
+        self.tabla_ex1.column("resultado", anchor=tk.CENTER, width=150)
+
+        self.tabla_ex1.pack(fill=tk.BOTH, expand=True)
+
+    def encolar_a(self):
+        try:
+            val = int(self.ent_a.get())
+            self.cola_a.encolar(val)
+            self.ent_a.delete(0, tk.END)
+            self.actualizar_tabla_tab1()
+        except ValueError:
+            messagebox.showerror("Error", "Ingrese un número entero válido en Cola A.")
+
+    def encolar_b(self):
+        try:
+            val = int(self.ent_b.get())
+            self.cola_b.encolar(val)
+            self.ent_b.delete(0, tk.END)
+            self.actualizar_tabla_tab1()
+        except ValueError:
+            messagebox.showerror("Error", "Ingrese un número entero válido en Cola B.")
+
+    def cargar_ejemplo_tab1(self):
+        self.cola_a = Cola()
+        self.cola_b = Cola()
+        for x in [3, 4, 2, 8, 12]: self.cola_a.encolar(x)
+        for x in [6, 2, 9, 11, 3]: self.cola_b.encolar(x)
+        self.cola_res = Cola()
+        self.actualizar_tabla_tab1()
+
+    def ejecutar_suma_tab1(self):
+        if self.cola_a.esta_vacia() and self.cola_b.esta_vacia():
+            messagebox.showwarning("Advertencia", "Ambas colas están vacías. Ingrese elementos primero.")
+            return
+        self.cola_res = sumar_colas(self.cola_a, self.cola_b)
+        self.actualizar_tabla_tab1()
+
+    def actualizar_tabla_tab1(self):
+        for item in self.tabla_ex1.get_children():
+            self.tabla_ex1.delete(item)
+
+        elems_a = self.cola_a.obtener_elementos()
+        elems_b = self.cola_b.obtener_elementos()
+        elems_r = self.cola_res.obtener_elementos()
+
+        max_len = max(len(elems_a), len(elems_b), len(elems_r))
+        for i in range(max_len):
+            v_a = elems_a[i] if i < len(elems_a) else ""
+            v_b = elems_b[i] if i < len(elems_b) else ""
+            v_r = elems_r[i] if i < len(elems_r) else ""
+            self.tabla_ex1.insert("", tk.END, values=(f"[{i}]", v_a, v_b, v_r))
+
+    # ==================================================================
+    # INTERFAZ EJERCICIO 2
+    # ==================================================================
+    def construir_tab2(self):
+        # Estado de los servicios de la aseguradora
+        self.servicios = {
+            1: {"cola": Cola(), "siguiente_ticket": 1},
+            2: {"cola": Cola(), "siguiente_ticket": 1},
+            3: {"cola": Cola(), "siguiente_ticket": 1}
+        }
+
+        # Consola de Entrada de Comandos
+        frame_cmd = ttk.LabelFrame(self.tab2, text=" Consola de Comandos (C <servicio> | A <servicio>) ", padding=10)
+        frame_cmd.pack(fill=tk.X, padx=10, pady=5)
+
+        ttk.Label(frame_cmd, text="Comando:").pack(side=tk.LEFT, padx=5)
+        self.ent_cmd = ttk.Entry(frame_cmd, width=20)
+        self.ent_cmd.pack(side=tk.LEFT, padx=5)
+        self.ent_cmd.bind("<Return>", lambda e: self.procesar_comando_tab2())
+
+        btn_cmd = ttk.Button(frame_cmd, text="Ejecutar Comando", command=self.procesar_comando_tab2)
+        btn_cmd.pack(side=tk.LEFT, padx=5)
+
+        # Botones Rápidos
+        frame_quick = ttk.Frame(frame_cmd)
+        frame_quick.pack(side=tk.RIGHT, padx=5)
+        ttk.Button(frame_quick, text="C 1 (Llegada S1)", command=lambda: self.ejecutar_accion('C', 1)).pack(side=tk.LEFT, padx=2)
+        ttk.Button(frame_quick, text="A 1 (Atender S1)", command=lambda: self.ejecutar_accion('A', 1)).pack(side=tk.LEFT, padx=2)
+
+        # Estado de las Colas en Pantalla
+        frame_estado = ttk.LabelFrame(self.tab2, text=" Estado en Tiempo Real por Servicio ", padding=10)
+        frame_estado.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
+
+        self.txt_estado = tk.Text(frame_estado, height=8, font=("Consolas", 10), state=tk.DISABLED)
+        self.txt_estado.pack(fill=tk.BOTH, expand=True)
+
+        # Historial y Consola de Log
+        frame_log = ttk.LabelFrame(self.tab2, text=" Historial de Llamados ", padding=10)
+        frame_log.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
+
+        self.txt_log = tk.Text(frame_log, height=6, font=("Consolas", 9), bg="#1e1e1e", fg="#00ff00")
+        self.txt_log.pack(fill=tk.BOTH, expand=True)
+
+        self.actualizar_vista_servicios()
+
+    def procesar_comando_tab2(self):
+        cmd = self.ent_cmd.get().strip().upper()
+        self.ent_cmd.delete(0, tk.END)
+
+        if not cmd:
+            return
+
+        partes = cmd.split()
+        if len(partes) == 2 and partes[0] in ['C', 'A']:
+            accion = partes[0]
+            try:
+                servicio_num = int(partes[1])
+                self.ejecutar_accion(accion, servicio_num)
+            except ValueError:
+                messagebox.showerror("Error", "El servicio debe ser un número entero. Ej: 'C 1'")
+        else:
+            messagebox.showerror("Comando Inválido", "Formato incorrecto. Use:\n'C <num>' para Llegada\n'A <num>' para Atender")
+
+    def ejecutar_accion(self, accion, num_servicio):
+        if num_servicio not in self.servicios:
+            self.servicios[num_servicio] = {"cola": Cola(), "siguiente_ticket": 1}
+
+        srv = self.servicios[num_servicio]
+
+        if accion == 'C':
+            ticket = f"S{num_servicio}-{srv['siguiente_ticket']:03d}"
+            srv['cola'].encolar(ticket)
+            srv['siguiente_ticket'] += 1
+            self.log_mensaje(f"[LLEGADA] Cliente asignado al Servicio {num_servicio}. Ticket número: {ticket}")
+
+        elif accion == 'A':
+            if srv['cola'].esta_vacia():
+                self.log_mensaje(f"[ATENCIÓN] Sin clientes en espera para el Servicio {num_servicio}.")
+            else:
+                atendido = srv['cola'].desencolar()
+                self.log_mensaje(f"[LLAMANDO] Atención en Ventanilla -> Servicio {num_servicio}: Cliente {atendido}")
+
+        self.actualizar_vista_servicios()
+
+    def log_mensaje(self, msg):
+        self.txt_log.config(state=tk.NORMAL)
+        self.txt_log.insert(tk.END, msg + "\n")
+        self.txt_log.see(tk.END)
+        self.txt_log.config(state=tk.DISABLED)
+
+    def actualizar_vista_servicios(self):
+        self.txt_estado.config(state=tk.NORMAL)
+        self.txt_estado.delete('1.0', tk.END)
+
+        for num, data in sorted(self.servicios.items()):
+            cola_items = data['cola'].obtener_elementos()
+            items_str = ", ".join(cola_items) if cola_items else "(vacía)"
+            self.txt_estado.insert(tk.END, f"Servicio {num}: [{len(cola_items)} clientes en espera] -> Colas: {items_str}\n")
+
+
+        self.txt_estado.config(state=tk.DISABLED)
+
+
+# ----------------------------------------------------------------------
+# PUNTO DE ENTRADA
+# ----------------------------------------------------------------------
+if __name__ == "__main__":
+    app = AplicacionGestionColas()
+    app.mainloop()
+```
+
+---
+
+### Resumen de Entregables para GitHub y Teams:
+
+1. **`index.html`**: Interfaz web interactiva con pestañas que puedes previsualizar directo desde el editor.
+2. **`app_gui.py`**: El código en **Python** completo con ventana de escritorio (`tkinter`). Puedes guardarlo en un archivo `.py` y ejecutarlo ejecutando `python app_gui.py` en tu consola o IDE.
