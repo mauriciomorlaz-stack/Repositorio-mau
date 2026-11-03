@@ -1,0 +1,178 @@
+import tkinter as tk
+from tkinter import messagebox
+
+
+class Node:
+    """Clase que representa un nodo de la lista enlazada."""
+    def __init__(self, elem):
+        self.elem = elem
+        self.next = None
+
+
+class LinkedQueue:
+    """Implementación de la Cola con Listas Enlazadas."""
+    def __init__(self):
+        self.first = None
+        self.end = None
+        self._size = 0
+
+    def is_empty(self):
+        return self.first is None
+
+    def size(self):
+        return self._size
+
+    def enqueue(self, obj):
+        new_node = Node(obj)
+        if self.is_empty():
+            self.first = new_node
+            self.end = new_node
+        else:
+            self.end.next = new_node
+            self.end = new_node
+        self._size += 1
+
+    def dequeue(self):
+        if self.is_empty():
+            return None
+        elem = self.first.elem
+        self.first = self.first.next
+        if self.first is None:
+            self.end = None
+        self._size -= 1
+        return elem
+
+    def first_element(self):
+        if self.is_empty():
+            return None
+        return self.first.elem
+
+
+class QueueApp:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Estructura de Datos: Cola con Lista Enlazada")
+        self.root.geometry("850x500")
+        self.root.config(bg="#f4f6f7")
+        self.root.resizable(False, False)
+
+        self.cola = LinkedQueue()
+
+        # ==========================
+        # Panel Izquierdo (Controles)
+        # ==========================
+        frame_izq = tk.Frame(root, bg="#2c3e50", padx=20, pady=20)
+        frame_izq.place(x=0, y=0, width=300, height=500)
+
+        tk.Label(frame_izq, text="Operaciones de Cola", font=("Arial", 14, "bold"), bg="#2c3e50", fg="white").pack(pady=10)
+
+        tk.Label(frame_izq, text="Valor del elemento:", bg="#2c3e50", fg="white", font=("Arial", 10)).pack(anchor="w", pady=(10, 0))
+        self.entry_dato = tk.Entry(frame_izq, font=("Arial", 12))
+        self.entry_dato.pack(fill="x", pady=5)
+        self.entry_dato.bind("<Return>", lambda event: self.ejecutar_enqueue())
+
+        btn_style = {"font": ("Arial", 10, "bold"), "bd": 0, "relief": "flat", "cursor": "hand2", "pady": 8}
+
+        tk.Button(frame_izq, text="📥 Encolar (enqueue)", bg="#27ae60", fg="white", command=self.ejecutar_enqueue, **btn_style).pack(fill="x", pady=8)
+        tk.Button(frame_izq, text="📤 Desencolar (dequeue)", bg="#c0392b", fg="white", command=self.ejecutar_dequeue, **btn_style).pack(fill="x", pady=8)
+        tk.Button(frame_izq, text="👁️ Ver Frente (first)", bg="#d35400", fg="white", command=self.ejecutar_first, **btn_style).pack(fill="x", pady=8)
+
+        # Estado rápido
+        self.lbl_estado = tk.Label(frame_izq, text="Tamaño: 0\nVacía: Sí", bg="#34495e", fg="white", font=("Arial", 10), justify="left", padx=10, pady=10)
+        self.lbl_estado.pack(fill="x", pady=20)
+
+        # ==========================
+        # Panel Derecho (Visualizador)
+        # ==========================
+        frame_der = tk.Frame(root, bg="#f4f6f7", padx=15, pady=15)
+        frame_der.place(x=300, y=0, width=550, height=500)
+
+        tk.Label(frame_der, text="Representación Visual de la Cola (Nodos)", font=("Arial", 14, "bold"), bg="#f4f6f7", fg="#2c3e50").pack(anchor="w", pady=10)
+
+        # Lienzo (Canvas) para dibujar los nodos enlazados
+        self.canvas = tk.Canvas(frame_der, bg="white", highlightthickness=1, highlightbackground="#bdc3c7")
+        self.canvas.pack(fill="both", expand=True, pady=10)
+
+        # Consola de mensajes abajo
+        self.lbl_consola = tk.Label(frame_der, text="Estado: Listo para operar.", font=("Arial", 10, "italic"), bg="#f4f6f7", fg="#7f8c8d")
+        self.lbl_consola.pack(anchor="w", pady=5)
+
+    def actualizar_interfaz(self):
+        # Actualizar etiquetas de estado
+        sz = self.cola.size()
+        vacia = "Sí" if self.cola.is_empty() else "No"
+        self.lbl_estado.config(text=f"Tamaño (size): {sz}\n¿Está vacía?: {vacia}")
+
+        # Limpiar canvas
+        self.canvas.delete("all")
+
+        if self.cola.is_empty():
+            self.canvas.create_text(260, 200, text="[ La Cola está Vacía ]", font=("Arial", 14, "bold"), fill="#95a5a6")
+            return
+
+        # Dibujar nodos enlazados horizontalmente
+        current = self.cola.first
+        x, y = 40, 160
+        box_width, box_height = 90, 80
+
+        idx = 0
+        while current is not None:
+            # Dibujar caja del nodo
+            fill_color = "#ebdef0" if current == self.cola.first else "#ebf5fb"
+            if current == self.cola.end and current != self.cola.first:
+                fill_color = "#e8f8f5"
+
+            self.canvas.create_rectangle(x, y, x + box_width, y + box_height, fill=fill_color, outline="#34495e", width=2)
+            
+            # Texto interno (Elem y puntero Next)
+            self.canvas.create_text(x + 45, y + 25, text=f"Elem:\n{current.elem}", font=("Arial", 10, "bold"), justify="center")
+            
+            next_txt = "next: •" if current.next else "next: None"
+            self.canvas.create_text(x + 45, y + 60, text=next_txt, font=("Arial", 9), fill="#7f8c8d")
+
+            # Indicadores FIRST y END arriba de los nodos
+            if current == self.cola.first:
+                self.canvas.create_text(x + 45, y - 20, text="▼ FIRST", font=("Arial", 9, "bold"), fill="#27ae60")
+            if current == self.cola.end:
+                self.canvas.create_text(x + 45, y - 40 if current == self.cola.first else y - 20, text="▼ END", font=("Arial", 9, "bold"), fill="#8e44ad")
+
+            # Dibujar flecha hacia el siguiente nodo si existe
+            if current.next is not None:
+                self.canvas.create_line(x + box_width, y + (box_height / 2), x + box_width + 40, y + (box_height / 2), arrow=tk.LAST, width=2, fill="#7f8c8d")
+                x += 40
+
+            x += box_width + 20
+            current = current.next
+            idx += 1
+
+    def ejecutar_enqueue(self):
+        valor = self.entry_dato.get().strip()
+        if valor:
+            self.cola.enqueue(valor)
+            self.entry_dato.delete(0, 'end')
+            self.lbl_consola.config(text=f"✅ Encolado con éxito: '{valor}'", fg="#27ae60")
+            self.actualizar_interfaz()
+        else:
+            messagebox.showwarning("Advertencia", "Por favor ingresa un valor válido.")
+
+    def ejecutar_dequeue(self):
+        eliminado = self.cola.dequeue()
+        if eliminado is not None:
+            self.lbl_consola.config(text=f"❌ Desencolado (elemento salido): '{eliminado}'", fg="#c0392b")
+            self.actualizar_interfaz()
+        else:
+            messagebox.showinfo("Información", "La cola ya está vacía, no se puede desencolar.")
+
+    def ejecutar_first(self):
+        primero = self.cola.first_element()
+        if primero is not None:
+            self.lbl_consola.config(text=f"👁️ Primer elemento actual: '{primero}'", fill="#d35400" if hasattr(self.lbl_consola, 'config') else None)
+        else:
+            messagebox.showinfo("Información", "La cola está vacía.")
+
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = QueueApp(root)
+    app.actualizar_interfaz()
+    root.mainloop()
