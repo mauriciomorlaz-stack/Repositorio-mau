@@ -1,0 +1,296 @@
+import tkinter as tk
+from tkinter import ttk, messagebox
+
+# ==========================================
+# ESTRUCTURAS DE DATOS (Nodos y Listas)
+# ==========================================
+
+class NodoIngrediente:
+    """Representa un nodo en la lista enlazada de ingredientes."""
+    def __init__(self, nombre):
+        self.nombre = nombre.strip().lower()
+        self.siguiente = None  # Puntero a NIL por defecto
+
+
+class Postre:
+    """Representa un elemento del arreglo POSTRES."""
+    def __init__(self, nombre):
+        self.nombre = nombre.strip().lower()
+        self.cabeza_ingredientes = None  # Puntero al primer ingrediente
+
+
+class SistemaPostres:
+    """Gestiona el arreglo ordenado de postres y sus operaciones."""
+    def __init__(self):
+        self.postres = []
+
+    def buscar_postre(self, nombre):
+        nombre_limpio = nombre.strip().lower()
+        for idx, postre in enumerate(self.postres):
+            if postre.nombre == nombre_limpio:
+                return idx, postre
+        return -1, None
+
+    def dar_alta_postre(self, nombre_postre, lista_ingredientes):
+        nombre_limpio = nombre_postre.strip().lower()
+        if not nombre_limpio:
+            raise ValueError("El nombre del postre no puede estar vacío.")
+
+        idx, _ = self.buscar_postre(nombre_limpio)
+        if idx != -1:
+            raise ValueError(f"El postre '{nombre_limpio}' ya existe.")
+
+        nuevo_postre = Postre(nombre_limpio)
+        
+        # Insertar ingredientes
+        for ing in lista_ingredientes:
+            ing_limpio = ing.strip().lower()
+            if ing_limpio:
+                self._insertar_nodo_ingrediente(nuevo_postre, ing_limpio)
+
+        # Mantiene el arreglo ordenado alfabéticamente
+        self.postres.append(nuevo_postre)
+        self.postres.sort(key=lambda p: p.nombre)
+
+    def dar_baja_postre(self, nombre_postre):
+        idx, _ = self.buscar_postre(nombre_postre)
+        if idx == -1:
+            raise ValueError(f"El postre '{nombre_postre}' no existe.")
+        del self.postres[idx]
+
+    def insertar_ingrediente(self, nombre_postre, nuevo_ingrediente):
+        _, postre = self.buscar_postre(nombre_postre)
+        if not postre:
+            raise ValueError(f"El postre '{nombre_postre}' no existe.")
+
+        ing_limpio = nuevo_ingrediente.strip().lower()
+        if not ing_limpio:
+            raise ValueError("El nombre del ingrediente no puede estar vacío.")
+
+        # Verificar si ya existe en la lista enlazada
+        actual = postre.cabeza_ingredientes
+        while actual:
+            if actual.nombre == ing_limpio:
+                raise ValueError(f"El ingrediente '{ing_limpio}' ya está registrado en este postre.")
+            actual = actual.siguiente
+
+        self._insertar_nodo_ingrediente(postre, ing_limpio)
+
+    def eliminar_ingrediente(self, nombre_postre, ingrediente_a_eliminar):
+        _, postre = self.buscar_postre(nombre_postre)
+        if not postre:
+            raise ValueError(f"El postre '{nombre_postre}' no existe.")
+
+        ing_limpio = ingrediente_a_eliminar.strip().lower()
+        actual = postre.cabeza_ingredientes
+        anterior = None
+
+        while actual is not None:
+            if actual.nombre == ing_limpio:
+                if anterior is None:
+                    postre.cabeza_ingredientes = actual.siguiente
+                else:
+                    anterior.siguiente = actual.siguiente
+                return
+            anterior = actual
+            actual = actual.siguiente
+
+        raise ValueError(f"El ingrediente '{ing_limpio}' no se encuentra en el postre '{nombre_postre}'.")
+
+    def eliminar_repetidos_ingredientes(self):
+        """Subprograma (Ejercicio 2): Elimina de manera automática todos los elementos repetidos en las listas de ingredientes."""
+        total_eliminados = 0
+        for postre in self.postres:
+            actual = postre.cabeza_ingredientes
+            while actual is not None:
+                anterior = actual
+                siguiente_nodo = actual.siguiente
+                while siguiente_nodo is not None:
+                    if siguiente_nodo.nombre == actual.nombre:
+                        # Se encontró un duplicado, se desenlaza
+                        anterior.siguiente = siguiente_nodo.siguiente
+                        total_eliminados += 1
+                    else:
+                        anterior = siguiente_nodo
+                    siguiente_nodo = siguiente_nodo.siguiente
+                actual = actual.siguiente
+        return total_eliminados
+
+    def _insertar_nodo_ingrediente(self, postre, ingrediente_nombre):
+        nuevo_nodo = NodoIngrediente(ingrediente_nombre)
+        if postre.cabeza_ingredientes is None:
+            postre.cabeza_ingredientes = nuevo_nodo
+        else:
+            actual = postre.cabeza_ingredientes
+            while actual.siguiente is not None:
+                actual = actual.siguiente
+            actual.siguiente = nuevo_nodo
+
+
+# ==========================================
+# INTERFAZ GRÁFICA (GUI con Tkinter)
+# ==========================================
+
+class AppPostresGUI:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Estructura de Datos: POSTRES y Eliminación de Duplicados")
+        self.root.geometry("880x700")
+        self.sistema = SistemaPostres()
+
+        # Datos iniciales de prueba (incluyendo algunos duplicados intencionales para probar el ejercicio 2)
+        self.sistema.dar_alta_postre("Flan", ["leche", "huevo", "azúcar", "leche", "caramelo"])
+        self.sistema.dar_alta_postre("Arroz con Leche", ["arroz", "leche", "canela", "arroz"])
+
+        self._crear_interfaz()
+        self.actualizar_vista()
+
+    def _crear_interfaz(self):
+        # Panel Superior: Formulario de Operaciones
+        panel_ops = ttk.LabelFrame(self.root, text=" Operaciones de la Estructura ", padding=10)
+        panel_ops.pack(fill="x", padx=10, pady=5)
+
+        # d. Alta de Postre
+        ttk.Label(panel_ops, text="Nombre del Postre:").grid(row=0, column=0, sticky="w", pady=2)
+        self.entry_postre = ttk.Entry(panel_ops, width=20)
+        self.entry_postre.grid(row=0, column=1, padx=5, pady=2)
+
+        ttk.Label(panel_ops, text="Ingredientes (separados por coma):").grid(row=0, column=2, sticky="w", pady=2)
+        self.entry_ingredientes = ttk.Entry(panel_ops, width=30)
+        self.entry_ingredientes.grid(row=0, column=3, padx=5, pady=2)
+
+        btn_alta = ttk.Button(panel_ops, text="d. Alta Postre", command=self.ejecutar_alta)
+        btn_alta.grid(row=0, column=4, padx=5, pady=2)
+
+        # e. Baja de Postre / a. Consultar
+        btn_baja = ttk.Button(panel_ops, text="e. Baja Postre", command=self.ejecutar_baja)
+        btn_baja.grid(row=1, column=1, columnspan=2, sticky="ew", pady=5)
+
+        btn_consultar = ttk.Button(panel_ops, text="a. Consultar Ingredientes", command=self.ejecutar_consulta)
+        btn_consultar.grid(row=1, column=3, columnspan=2, sticky="ew", pady=5)
+
+        # Modificación de Ingredientes (b, c) y el nuevo punto 2 (Eliminar repetidos)
+        ttk.Separator(panel_ops, orient="horizontal").grid(row=2, column=0, columnspan=5, sticky="ew", pady=8)
+
+        ttk.Label(panel_ops, text="Ingrediente Individual:").grid(row=3, column=0, sticky="w", pady=2)
+        self.entry_ingrediente_ind = ttk.Entry(panel_ops, width=20)
+        self.entry_ingrediente_ind.grid(row=3, column=1, padx=5, pady=2)
+
+        btn_ins_ing = ttk.Button(panel_ops, text="b. Insertar Ingrediente", command=self.ejecutar_insertar_ing)
+        btn_ins_ing.grid(row=3, column=2, padx=5, pady=2)
+
+        btn_elim_ing = ttk.Button(panel_ops, text="c. Eliminar Ingrediente", command=self.ejecutar_eliminar_ing)
+        btn_elim_ing.grid(row=3, column=3, padx=5, pady=2)
+
+        # Botón especial para el Ejercicio 2
+        btn_repetidos = ttk.Button(panel_ops, text="2. Eliminar Ingredientes Repetidos", command=self.ejecutar_eliminar_repetidos)
+        btn_repetidos.grid(row=4, column=0, columnspan=5, sticky="ew", pady=8)
+
+        # Panel Inferior: Visualización Gráfica de la Estructura
+        panel_vista = ttk.LabelFrame(self.root, text=" Representación Gráfica del Arreglo y Listas Enlazadas ", padding=10)
+        panel_vista.pack(fill="both", expand=True, padx=10, pady=5)
+
+        self.txt_vista = tk.Text(panel_vista, font=("Courier New", 11), bg="#1e1e1e", fg="#00ff66", relief="sunken")
+        self.txt_vista.pack(fill="both", expand=True)
+
+    def actualizar_vista(self):
+        """Dibuja en pantalla el arreglo POSTRES y sus listas enlazadas dinámicas."""
+        self.txt_vista.config(state="normal")
+        self.txt_vista.delete("1.0", tk.END)
+
+        self.txt_vista.insert(tk.END, "ARREGLO [POSTRES] (Ordenado Alfabéticamente)\n")
+        self.txt_vista.insert(tk.END, "=" * 65 + "\n\n")
+
+        if not self.sistema.postres:
+            self.txt_vista.insert(tk.END, "[ VACÍO ]\n")
+        else:
+            for idx, p in enumerate(self.sistema.postres):
+                linea = f"[{idx}] {p.nombre.upper():<16} ---> "
+                
+                actual = p.cabeza_ingredientes
+                if not actual:
+                    linea += "NIL"
+                else:
+                     nodos = []
+                     while actual:
+                         nodos.append(f"[{actual.nombre}]")
+                         actual = actual.siguiente
+                     linea += " -> ".join(nodos) + " -> NIL"
+                
+                self.txt_vista.insert(tk.END, linea + "\n" + "-" * 65 + "\n")
+
+        self.txt_vista.config(state="disabled")
+
+    # --- Acciones de Botones ---
+
+    def ejecutar_alta(self):
+        nombre = self.entry_postre.get()
+        ings = [i for i in self.entry_ingredientes.get().split(",") if i.strip()]
+        try:
+            self.sistema.dar_alta_postre(nombre, ings)
+            self.actualizar_vista()
+            messagebox.showinfo("Éxito", f"Postre '{nombre}' agregado exitosamente.")
+            self.entry_postre.delete(0, tk.END)
+            self.entry_ingredientes.delete(0, tk.END)
+        except Exception as e:
+            messagebox.showerror("Error", str(e))
+
+    def ejecutar_baja(self):
+        nombre = self.entry_postre.get()
+        try:
+            self.sistema.dar_baja_postre(nombre)
+            self.actualizar_vista()
+            messagebox.showinfo("Éxito", f"Postre '{nombre}' dado de baja.")
+            self.entry_postre.delete(0, tk.END)
+        except Exception as e:
+            messagebox.showerror("Error", str(e))
+
+    def ejecutar_consulta(self):
+        nombre = self.entry_postre.get()
+        _, postre = self.sistema.buscar_postre(nombre)
+        if not postre:
+            messagebox.showwarning("No encontrado", f"El postre '{nombre}' no existe.")
+            return
+
+        actual = postre.cabeza_ingredientes
+        elementos = []
+        while actual:
+            elementos.append(actual.nombre)
+            actual = actual.siguiente
+
+        lista_txt = ", ".join(elementos) if elementos else "Sin ingredientes (NIL)"
+        messagebox.showinfo(f"Ingredientes de {postre.nombre.capitalize()}", f"Lista de Ingredientes:\n\n{lista_txt}")
+
+    def ejecutar_insertar_ing(self):
+        nombre_p = self.entry_postre.get()
+        ing = self.entry_ingrediente_ind.get()
+        try:
+            self.sistema.insertar_ingrediente(nombre_p, ing)
+            self.actualizar_vista()
+            messagebox.showinfo("Éxito", f"Ingrediente '{ing}' añadido a '{nombre_p}'.")
+            self.entry_ingrediente_ind.delete(0, tk.END)
+        except Exception as e:
+            messagebox.showerror("Error", str(e))
+
+    def ejecutar_eliminar_ing(self):
+        nombre_p = self.entry_postre.get()
+        ing = self.entry_ingrediente_ind.get()
+        try:
+            self.sistema.eliminar_ingrediente(nombre_p, ing)
+            self.actualizar_vista()
+            messagebox.showinfo("Éxito", f"Ingrediente '{ing}' eliminado de '{nombre_p}'.")
+            self.entry_ingrediente_ind.delete(0, tk.END)
+        except Exception as e:
+            messagebox.showerror("Error", str(e))
+
+    def ejecutar_eliminar_repetidos(self):
+        """Ejecuta el subprograma para limpiar duplicados en las listas de ingredientes."""
+        eliminados = self.sistema.eliminar_repetidos_ingredientes()
+        self.actualizar_vista()
+        messagebox.showinfo("Limpieza Completada", f"Se han eliminado {eliminados} elementos repetidos de manera automática.")
+
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = AppPostresGUI(root)
+    root.mainloop()
