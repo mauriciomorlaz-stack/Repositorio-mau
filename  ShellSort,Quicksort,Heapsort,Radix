@@ -1,0 +1,506 @@
+import json
+import threading
+import time
+import webbrowser
+from http.server import BaseHTTPRequestHandler, HTTPServer
+
+
+# =========================================================
+#   MÉTODOS DE ORDENAMIENTO EN PYTHON
+# =========================================================
+
+def shell_sort(arr, pasos):
+    lista = arr.copy()
+    n = len(lista)
+    brecha = n // 2
+
+    while brecha > 0:
+        for i in range(brecha, n):
+            temp = lista[i]
+            j = i
+            while j >= brecha and lista[j - brecha] > temp:
+                lista[j] = lista[j - brecha]
+                j -= brecha
+                pasos.append({"lista": lista.copy(), "activos": [j, j + brecha]})
+            lista[j] = temp
+            pasos.append({"lista": lista.copy(), "activos": [j]})
+        brecha //= 2
+
+    return lista
+
+
+def _particion(lista, bajo, alto, pasos):
+    pivote = lista[alto]
+    i = bajo - 1
+    for j in range(bajo, alto):
+        if lista[j] <= pivote:
+            i += 1
+            lista[i], lista[j] = lista[j], lista[i]
+            pasos.append({"lista": lista.copy(), "activos": [i, j]})
+    lista[i + 1], lista[alto] = lista[alto], lista[i + 1]
+    pasos.append({"lista": lista.copy(), "activos": [i + 1, alto]})
+    return i + 1
+
+
+def _quick_sort_rec(lista, bajo, alto, pasos):
+    if bajo < alto:
+        pi = _particion(lista, bajo, alto, pasos)
+        _quick_sort_rec(lista, bajo, pi - 1, pasos)
+        _quick_sort_rec(lista, pi + 1, alto, pasos)
+
+
+def quick_sort(arr, pasos):
+    lista = arr.copy()
+    if len(lista) > 1:
+        _quick_sort_rec(lista, 0, len(lista) - 1, pasos)
+    return lista
+
+
+def _heapify(lista, n, i, pasos):
+    mayor = i
+    izq = 2 * i + 1
+    der = 2 * i + 2
+
+    if izq < n and lista[izq] > lista[mayor]:
+        mayor = izq
+    if der < n and lista[der] > lista[mayor]:
+        mayor = der
+
+    if mayor != i:
+        lista[i], lista[mayor] = lista[mayor], lista[i]
+        pasos.append({"lista": lista.copy(), "activos": [i, mayor]})
+        _heapify(lista, n, mayor, pasos)
+
+
+def heap_sort(arr, pasos):
+    lista = arr.copy()
+    n = len(lista)
+
+    for i in range(n // 2 - 1, -1, -1):
+        _heapify(lista, n, i, pasos)
+
+    for i in range(n - 1, 0, -1):
+        lista[i], lista[0] = lista[0], lista[i]
+        pasos.append({"lista": lista.copy(), "activos": [0, i]})
+        _heapify(lista, i, 0, pasos)
+
+    return lista
+
+
+def _counting_sort_radix(lista, exp, pasos, base_completa):
+    n = len(lista)
+    salida = [0] * n
+    conteo = [0] * 10
+
+    for i in range(n):
+        indice = (lista[i] // exp) % 10
+        conteo[indice] += 1
+
+    for i in range(1, 10):
+        conteo[i] += conteo[i - 1]
+
+    i = n - 1
+    while i >= 0:
+        indice = (lista[i] // exp) % 10
+        salida[conteo[indice] - 1] = lista[i]
+        conteo[indice] -= 1
+        i -= 1
+
+    for i in range(n):
+        lista[i] = salida[i]
+        if base_completa is not None:
+            base_completa[i] = salida[i]
+            pasos.append({"lista": base_completa.copy(), "activos": [i]})
+
+
+def _radix_positivos(lista, pasos=None, base_completa=None):
+    if not lista:
+        return []
+    max_num = max(lista)
+    exp = 1
+    while max_num // exp > 0:
+        _counting_sort_radix(lista, exp, pasos, base_completa)
+        exp *= 10
+    return lista
+
+
+def radix_sort(arr, pasos):
+    if not arr:
+        return []
+    if any(not isinstance(x, int) for x in arr):
+        raise ValueError("Radix Sort solo acepta números enteros.")
+
+    negativos = [-x for x in arr if x < 0]
+    positivos = [x for x in arr if x >= 0]
+
+    if not negativos:
+        copia = positivos.copy()
+        _radix_positivos(copia, pasos, base_completa=copia)
+        return copia
+
+    negativos_ord = _radix_positivos(negativos)
+    positivos_ord = _radix_positivos(positivos)
+    resultado = [-x for x in reversed(negativos_ord)] + positivos_ord
+    pasos.append({"lista": resultado.copy(), "activos": list(range(len(resultado)))})
+    return resultado
+
+
+METODOS = {
+    "ShellSort": shell_sort,
+    "Quicksort": quick_sort,
+    "Heapsort": heap_sort,
+    "Radix Sort": radix_sort,
+}
+
+
+# =========================================================
+#   INTERFAZ GRÁFICA (HTML + CSS + JS SERVIDA POR PYTHON)
+# =========================================================
+
+HTML_UI = r"""<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Métodos de Ordenamiento - Python</title>
+<style>
+  * { box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
+  body {
+    margin: 0; background: #0f172a; color: #f8fafc;
+    display: flex; flex-direction: column; min-height: 100vh;
+  }
+  header {
+    background: #1e293b; padding: 16px 28px; border-bottom: 1px solid #334155;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  header h1 { margin: 0; font-size: 1.25rem; color: #38bdf8; }
+  header span { color: #94a3b8; font-size: 0.9rem; }
+  .container {
+    display: grid; grid-template-columns: 380px 1fr; gap: 20px;
+    padding: 20px 28px; flex: 1;
+  }
+  .card {
+    background: #1e293b; border-radius: 12px; padding: 18px;
+    border: 1px solid #334155; display: flex; flex-direction: column;
+  }
+  h2 {
+    margin: 0 0 12px 0; font-size: 0.9rem; text-transform: uppercase;
+    letter-spacing: 0.05em; color: #38bdf8;
+  }
+  .metodos-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 18px;
+  }
+  .metodo-btn {
+    background: #0f172a; border: 2px solid #334155; color: #e2e8f0;
+    padding: 10px; border-radius: 8px; cursor: pointer; font-weight: 600;
+    text-align: left; transition: 0.15s;
+  }
+  .metodo-btn.activo {
+    border-color: #38bdf8; background: #0c4a6e; color: #ffffff;
+  }
+  .fila { display: flex; gap: 8px; margin-bottom: 16px; }
+  input[type="number"] {
+    background: #0f172a; border: 1px solid #475569; color: #f8fafc;
+    padding: 8px 10px; border-radius: 6px; font-size: 0.95rem; width: 100%;
+  }
+  input[type="number"]:focus { outline: none; border-color: #38bdf8; }
+  button.btn {
+    border: none; border-radius: 6px; padding: 9px 14px; font-weight: 600;
+    cursor: pointer; transition: 0.15s; white-space: nowrap;
+  }
+  .btn-blue { background: #0284c7; color: white; }
+  .btn-blue:hover { background: #0369a1; }
+  .btn-gray { background: #475569; color: white; }
+  .btn-gray:hover { background: #64748b; }
+  .btn-green { background: #10b981; color: #06281e; width: 100%; font-size: 1rem; padding: 12px; }
+  .btn-green:hover { background: #059669; color: white; }
+  .btn-red { background: #ef4444; color: white; width: 100%; }
+  .btn-red:hover { background: #dc2626; }
+  .campos-box {
+    background: #0f172a; border: 1px solid #334155; border-radius: 8px;
+    padding: 10px; max-height: 230px; overflow-y: auto;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px;
+  }
+  .campo-item { display: flex; align-items: center; gap: 6px; }
+  .campo-item label { color: #94a3b8; font-size: 0.85rem; width: 32px; }
+  .acciones-bottom { margin-top: auto; display: flex; flex-direction: column; gap: 8px; }
+  .fila-dos { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .grafica-area {
+    background: #0f172a; border: 1px solid #334155; border-radius: 8px;
+    height: 310px; display: flex; align-items: flex-end; justify-content: center;
+    gap: 6px; padding: 28px 18px 14px 18px; margin-bottom: 16px;
+  }
+  .barra-wrap {
+    flex: 1; max-width: 55px; height: 100%; display: flex;
+    flex-direction: column; justify-content: flex-end; align-items: center;
+  }
+  .barra {
+    width: 100%; background: #38bdf8; border-radius: 4px 4px 0 0;
+    transition: height 0.12s ease, background-color 0.12s ease;
+  }
+  .barra.activa { background: #f59e0b; }
+  .barra.lista { background: #10b981; }
+  .barra-val { font-size: 0.78rem; margin-bottom: 4px; color: #e2e8f0; font-weight: bold; }
+  pre {
+    background: #0f172a; border: 1px solid #334155; border-radius: 8px;
+    padding: 14px; margin: 0; color: #e2e8f0; font-size: 0.92rem; line-height: 1.5;
+    overflow-x: auto;
+  }
+</style>
+</head>
+<body>
+  <header>
+    <h1>SISTEMA DE MÉTODOS DE ORDENAMIENTO (PYTHON)</h1>
+    <span>ShellSort • Quicksort • Heapsort • Radix Sort</span>
+  </header>
+
+  <div class="container">
+    <div class="card">
+      <h2>1. Elige el método</h2>
+      <div class="metodos-grid" id="menuMetodos">
+        <button class="metodo-btn activo" data-m="ShellSort">1. ShellSort</button>
+        <button class="metodo-btn" data-m="Quicksort">2. Quicksort</button>
+        <button class="metodo-btn" data-m="Heapsort">3. Heapsort</button>
+        <button class="metodo-btn" data-m="Radix Sort">4. Radix Sort</button>
+      </div>
+
+      <h2>2. Cantidad de números</h2>
+      <div class="fila">
+        <input type="number" id="cantidad" min="1" max="50" placeholder="Ej. 8">
+        <button class="btn btn-blue" onclick="crearCampos()">Crear campos</button>
+        <button class="btn btn-gray" onclick="llenarAzar()">Azar</button>
+      </div>
+
+      <h2>3. Ingresa los números</h2>
+      <div class="campos-box" id="camposBox">
+        <span style="grid-column: 1 / -1; color: #64748b; font-size: 0.85rem;">
+          Indica la cantidad arriba y presiona "Crear campos".
+        </span>
+      </div>
+
+      <div class="acciones-bottom">
+        <button class="btn btn-green" onclick="ordenar()">▶ ORDENAR NÚMEROS</button>
+        <div class="fila-dos">
+          <button class="btn btn-gray" onclick="limpiarTodo()">Limpiar</button>
+          <button class="btn btn-red" onclick="salirApp()">5. Salir</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Visualización gráfica del ordenamiento</h2>
+      <div class="grafica-area" id="grafica">
+        <span style="color:#64748b; align-self:center;">Esperando números...</span>
+      </div>
+
+      <h2>Resultados ejecutados en Python</h2>
+      <pre id="resultados">Selecciona un método, ingresa tus números y presiona ORDENAR.</pre>
+    </div>
+  </div>
+
+<script>
+  let metodoActual = "ShellSort";
+  let timerAnimacion = null;
+
+  document.querySelectorAll(".metodo-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll(".metodo-btn").forEach(b => b.classList.remove("activo"));
+      btn.classList.add("activo");
+      metodoActual = btn.dataset.m;
+    });
+  });
+
+  function crearCampos() {
+    const cant = parseInt(document.getElementById("cantidad").value);
+    if (isNaN(cant) || cant < 1 || cant > 50) {
+      alert("Ingresa una cantidad válida entre 1 y 50.");
+      return;
+    }
+    const box = document.getElementById("camposBox");
+    box.innerHTML = "";
+    for (let i = 1; i <= cant; i++) {
+      box.innerHTML += `
+        <div class="campo-item">
+          <label>#${i}:</label>
+          <input type="number" step="any" class="num-input" id="num_${i}">
+        </div>`;
+    }
+    document.getElementById("num_1")?.focus();
+  }
+
+  function llenarAzar() {
+    const cantInput = document.getElementById("cantidad");
+    if (!cantInput.value) cantInput.value = 10;
+    crearCampos();
+    const inputs = document.querySelectorAll(".num-input");
+    const vals = [];
+    inputs.forEach(inp => {
+      const n = Math.floor(Math.random() * 95) + 5;
+      inp.value = n;
+      vals.push(n);
+    });
+    dibujarBarras(vals, [], false);
+  }
+
+  function dibujarBarras(lista, activos = [], finalizado = false) {
+    const cont = document.getElementById("grafica");
+    cont.innerHTML = "";
+    if (!lista || lista.length === 0) return;
+
+    const minVal = Math.min(...lista);
+    const maxVal = Math.max(...lista);
+    const rango = maxVal !== minVal ? maxVal - minVal : 1;
+
+    lista.forEach((val, idx) => {
+      const pct = maxVal !== minVal ? 12 + ((val - minVal) / rango) * 84 : 65;
+      const claseExtra = finalizado ? "lista" : (activos.includes(idx) ? "activa" : "");
+      cont.innerHTML += `
+        <div class="barra-wrap">
+          <div class="barra-val">${val}</div>
+          <div class="barra ${claseExtra}" style="height: ${pct}%;"></div>
+        </div>`;
+    });
+  }
+
+  async function ordenar() {
+    clearInterval(timerAnimacion);
+    const inputs = document.querySelectorAll(".num-input");
+    if (inputs.length === 0) {
+      alert("Primero crea los campos e ingresa los números.");
+      return;
+    }
+
+    const numeros = [];
+    for (let i = 0; i < inputs.length; i++) {
+      const raw = inputs[i].value.trim();
+      if (raw === "") {
+        alert(`Falta ingresar el número #${i + 1}.`);
+        inputs[i].focus();
+        return;
+      }
+      const num = Number(raw);
+      if (Number.isNaN(num)) {
+        alert(`El valor #${i + 1} no es válido.`);
+        return;
+      }
+      numeros.push(Number.isInteger(num) ? parseInt(raw, 10) : num);
+    }
+
+    const resp = await fetch("/ordenar", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ metodo: metodoActual, numeros })
+    });
+    const data = await resp.json();
+
+    if (data.error) {
+      alert(data.error);
+      return;
+    }
+
+    document.getElementById("resultados").textContent =
+      `Método utilizado   : ${data.metodo}\n` +
+      `Cantidad elementos : ${data.original.length}\n` +
+      `Lista original     : [${data.original.join(", ")}]\n` +
+      `Lista ordenada     : [${data.ordenado.join(", ")}]\n` +
+      `Tiempo en Python   : ${data.tiempo_ms.toFixed(4)} ms`;
+
+    let idx = 0;
+    const pasos = data.pasos;
+    if (pasos.length === 0) {
+      dibujarBarras(data.ordenado, [], true);
+      return;
+    }
+
+    const delay = Math.max(25, Math.min(110, Math.floor(1800 / pasos.length)));
+    timerAnimacion = setInterval(() => {
+      if (idx < pasos.length) {
+        dibujarBarras(pasos[idx].lista, pasos[idx].activos, false);
+        idx++;
+      } else {
+        clearInterval(timerAnimacion);
+        dibujarBarras(data.ordenado, [], true);
+      }
+    }, delay);
+  }
+
+  function limpiarTodo() {
+    clearInterval(timerAnimacion);
+    document.getElementById("cantidad").value = "";
+    document.getElementById("camposBox").innerHTML =
+      `<span style="grid-column: 1 / -1; color: #64748b; font-size: 0.85rem;">Indica la cantidad arriba y presiona "Crear campos".</span>`;
+    document.getElementById("grafica").innerHTML =
+      `<span style="color:#64748b; align-self:center;">Esperando números...</span>`;
+    document.getElementById("resultados").textContent =
+      "Selecciona un método, ingresa tus números y presiona ORDENAR.";
+  }
+
+  async function salirApp() {
+    if (!confirm("¿Deseas cerrar y finalizar el programa?")) return;
+    await fetch("/salir", { method: "POST" });
+    document.body.innerHTML =
+      "<div style='margin:auto; text-align:center;'><h2>Programa finalizado correctamente.</h2><p>Ya puedes cerrar esta pestaña.</p></div>";
+  }
+</script>
+</body>
+</html>
+"""
+
+
+# =========================================================
+#   SERVIDOR LOCAL EN PYTHON
+# =========================================================
+
+class ManejadorOrdenamiento(BaseHTTPRequestHandler):
+    def log_message(self, format, *args):
+        pass  # Evita ruido en consola
+
+    def do_GET(self):
+        self.send_response(200)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
+        self.end_headers()
+        self.wfile.write(HTML_UI.encode("utf-8"))
+
+    def do_POST(self):
+        if self.path == "/ordenar":
+            largo = int(self.headers.get("Content-Length", 0))
+            datos = json.loads(self.rfile.read(largo).decode("utf-8"))
+
+            metodo = datos["metodo"]
+            numeros = datos["numeros"]
+            pasos = []
+
+            try:
+                inicio = time.perf_counter()
+                ordenado = METODOS[metodo](numeros, pasos)
+                tiempo_ms = (time.perf_counter() - inicio) * 1000
+                respuesta = {
+                    "metodo": metodo,
+                    "original": numeros,
+                    "ordenado": ordenado,
+                    "tiempo_ms": tiempo_ms,
+                    "pasos": pasos,
+                }
+            except ValueError as err:
+                respuesta = {"error": str(err)}
+
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.end_headers()
+            self.wfile.write(json.dumps(respuesta).encode("utf-8"))
+
+        elif self.path == "/salir":
+            self.send_response(200)
+            self.end_headers()
+            print("\nPrograma cerrado desde la interfaz gráfica.")
+            threading.Thread(target=self.server.shutdown, daemon=True).start()
+
+
+if __name__ == "__main__":
+    servidor = HTTPServer(("127.0.0.1", 0), ManejadorOrdenamiento)
+    puerto = servidor.server_address[1]
+    url = f"http://127.0.0.1:{puerto}"
+
+    print(f"Interfaz abierta en: {url}")
+    print("Presiona '5. Salir' en la interfaz para terminar el programa.")
+    webbrowser.open(url)
+    servidor.serve_forever()
