@@ -1,0 +1,136 @@
+import tkinter as tk
+from tkinter import ttk, messagebox
+
+# ==========================================
+# ALGORITMOS DE ORDENAMIENTO
+# ==========================================
+
+def ordenamiento_burbuja(lista):
+    n = len(lista)
+    for i in range(n):
+        for j in range(0, n - i - 1):
+            if lista[j] > lista[j + 1]:
+                lista[j], lista[j + 1] = lista[j + 1], lista[j]
+    return lista
+
+def ordenamiento_insercion(lista):
+    for i in range(1, len(lista)):
+        clave = lista[i]
+        j = i - 1
+        while j >= 0 and clave < lista[j]:
+            lista[j + 1] = lista[j]
+            j -= 1
+        lista[j + 1] = clave
+    return lista
+
+def ordenamiento_seleccion(lista):
+    n = len(lista)
+    for i in range(n):
+        indice_minimo = i
+        for j in range(i + 1, n):
+            if lista[j] < lista[indice_minimo]:
+                indice_minimo = j
+        lista[i], lista[indice_minimo] = lista[indice_minimo], lista[i]
+    return lista
+
+# ==========================================
+# FUNCIONES DE PROCESAMIENTO PARA LA INTERFAZ
+# ==========================================
+
+def ejecutar_ordenamiento(entry_widget, lbl_orig, lbl_res, algoritmo, nombre_metodo):
+    entrada = entry_widget.get()
+    try:
+        datos = [float(x.strip()) for x in entrada.split(",") if x.strip() != ""]
+        if not datos:
+            raise ValueError
+        
+        lista_original = datos.copy()
+        resultado = algoritmo(datos)
+        
+        lbl_orig.config(text=f"Datos originales: {lista_original}")
+        lbl_res.config(text=f"Ordenado ({nombre_metodo}): {resultado}")
+    except ValueError:
+        messagebox.showerror("Error de entrada", "Por favor, ingresa números válidos separados por comas.")
+
+# ==========================================
+# CONFIGURACIÓN DE LA VENTANA PRINCIPAL
+# ==========================================
+
+ventana = tk.Tk()
+ventana.title("Métodos de Ordenamiento en Python")
+ventana.geometry("500x300")
+ventana.resizable(False, False)
+
+# Contenedor de pestañas
+notebook = ttk.Notebook(ventana)
+notebook.pack(fill="both", expand=True, padx=10, pady=10)
+
+# --- PESTAÑA 1: MÉTODO BURBUJA ---
+tab_burbuja = ttk.Frame(notebook, padding=15)
+notebook.add(tab_burbuja, text="1. Burbuja")
+
+tk.Label(tab_burbuja, text="Ejercicio 1: Ordenamiento de Calificaciones", font=("Arial", 12, "bold")).pack(pady=5)
+tk.Label(tab_burbuja, text="Ingresa las calificaciones separadas por comas:").pack(pady=5)
+
+entry_burbuja = tk.Entry(tab_burbuja, width=45, font=("Arial", 10))
+entry_burbuja.insert(0, "85, 70, 95, 60, 88")
+entry_burbuja.pack(pady=5)
+
+lbl_orig_burbuja = tk.Label(tab_burbuja, text="Datos originales: -", font=("Arial", 10))
+lbl_res_burbuja = tk.Label(tab_burbuja, text="Ordenado (Burbuja): -", font=("Arial", 10, "bold"), fg="#2E7D32")
+
+btn_burbuja = tk.Button(
+    tab_burbuja, text="Ordenar Calificaciones", bg="#4CAF50", fg="white", font=("Arial", 10, "bold"),
+    command=lambda: ejecutar_ordenamiento(entry_burbuja, lbl_orig_burbuja, lbl_res_burbuja, ordenamiento_burbuja, "Burbuja")
+)
+btn_burbuja.pack(pady=10)
+lbl_orig_burbuja.pack(pady=2)
+lbl_res_burbuja.pack(pady=2)
+
+
+# --- PESTAÑA 2: MÉTODO POR INSERCIÓN ---
+tab_insercion = ttk.Frame(notebook, padding=15)
+notebook.add(tab_insercion, text="2. Por Inserción")
+
+tk.Label(tab_insercion, text="Ejercicio 2: Ordenamiento de Precios", font=("Arial", 12, "bold")).pack(pady=5)
+tk.Label(tab_insercion, text="Ingresa los precios separados por comas:").pack(pady=5)
+
+entry_insercion = tk.Entry(tab_insercion, width=45, font=("Arial", 10))
+entry_insercion.insert(0, "250.0, 49.99, 120.5, 15.0, 89.9")
+entry_insercion.pack(pady=5)
+
+lbl_orig_insercion = tk.Label(tab_insercion, text="Datos originales: -", font=("Arial", 10))
+lbl_res_insercion = tk.Label(tab_insercion, text="Ordenado (Inserción): -", font=("Arial", 10, "bold"), fg="#1565C0")
+
+btn_insercion = tk.Button(
+    tab_insercion, text="Ordenar Precios", bg="#2196F3", fg="white", font=("Arial", 10, "bold"),
+    command=lambda: ejecutar_ordenamiento(entry_insercion, lbl_orig_insercion, lbl_res_insercion, ordenamiento_insercion, "Inserción")
+)
+btn_insercion.pack(pady=10)
+lbl_orig_insercion.pack(pady=2)
+lbl_res_insercion.pack(pady=2)
+
+
+# --- PESTAÑA 3: MÉTODO POR SELECCIÓN ---
+tab_seleccion = ttk.Frame(notebook, padding=15)
+notebook.add(tab_seleccion, text="3. Por Selección")
+
+tk.Label(tab_seleccion, text="Ejercicio 3: Tiempos en Carrera (Segundos)", font=("Arial", 12, "bold")).pack(pady=5)
+tk.Label(tab_seleccion, text="Ingresa los tiempos separados por comas:").pack(pady=5)
+
+entry_seleccion = tk.Entry(tab_seleccion, width=45, font=("Arial", 10))
+entry_seleccion.insert(0, "12.5, 10.8, 14.2, 11.1, 13.0")
+entry_seleccion.pack(pady=5)
+
+lbl_orig_seleccion = tk.Label(tab_seleccion, text="Datos originales: -", font=("Arial", 10))
+lbl_res_seleccion = tk.Label(tab_seleccion, text="Ordenado (Selección): -", font=("Arial", 10, "bold"), fg="#E65100")
+
+btn_seleccion = tk.Button(
+    tab_seleccion, text="Ordenar Tiempos", bg="#FF9800", fg="white", font=("Arial", 10, "bold"),
+    command=lambda: ejecutar_ordenamiento(entry_seleccion, lbl_orig_seleccion, lbl_res_seleccion, ordenamiento_seleccion, "Selección")
+)
+btn_seleccion.pack(pady=10)
+lbl_orig_seleccion.pack(pady=2)
+lbl_res_seleccion.pack(pady=2)
+
+ventana.mainloop()
