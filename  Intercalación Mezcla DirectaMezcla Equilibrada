@@ -1,0 +1,337 @@
+import tkinter as tk
+from tkinter import ttk, messagebox, scrolledtext
+
+# =====================================================================
+# LÓGICA DE LOS ALGORITMOS DE ORDENAMIENTO EXTERNO
+# =====================================================================
+
+def intercalacion_pasos(lista1, lista2):
+    """
+    Ejercicio 1: Intercalación (Merge de dos listas previamente ordenadas).
+    """
+    # Aseguramos que ambas listas estén ordenadas inicialmente como exige el método
+    l1 = sorted(lista1)
+    l2 = sorted(lista2)
+    resultado = []
+    i, j = 0, 0
+    pasos = []
+    
+    pasos.append(f"Sucursal A (Ordenada): {l1}")
+    pasos.append(f"Sucursal B (Ordenada): {l2}\n")
+    pasos.append("--- INICIO DE INTERCALACIÓN ---")
+
+    while i < len(l1) and j < len(l2):
+        if l1[i] <= l2[j]:
+            resultado.append(l1[i])
+            pasos.append(f"Compara {l1[i]} <= {l2[j]} -> Toma {l1[i]} (Lista A)")
+            i += 1
+        else:
+            resultado.append(l2[j])
+            pasos.append(f"Compara {l1[i]} > {l2[j]} -> Toma {l2[j]} (Lista B)")
+            j += 1
+
+    # Agregar elementos restantes
+    while i < len(l1):
+        resultado.append(l1[i])
+        pasos.append(f"Restante Lista A -> Agrega {l1[i]}")
+        i += 1
+
+    while j < len(l2):
+        resultado.append(l2[j])
+        pasos.append(f"Restante Lista B -> Agrega {l2[j]}")
+        j += 1
+
+    pasos.append(f"\nResultado Final Consolidado: {resultado}")
+    return "\n".join(pasos)
+
+
+def mezcla_directa_pasos(lista):
+    """
+    Ejercicio 2: Mezcla Directa (Partición en bloques de tamaño 1, 2, 4, 8...).
+    """
+    arr = list(lista)
+    n = len(arr)
+    pasos = [f"Lista Original (Folios): {arr}\n"]
+    paso_num = 1
+    tam_bloque = 1
+
+    while tam_bloque < n:
+        pasos.append(f"--- PASADA {paso_num} (Tamaño de bloque: {tam_bloque}) ---")
+        f1, f2 = [], []
+        
+        # Fase de Partición (Distribución alternada en dos archivos auxiliares F1 y F2)
+        for i in range(0, n, 2 * tam_bloque):
+            f1.extend(arr[i : i + tam_bloque])
+            f2.extend(arr[i + tam_bloque : i + 2 * tam_bloque])
+            
+        pasos.append(f"  Partición -> Archivo F1: {f1} | Archivo F2: {f2}")
+
+        # Fase de Fusión (Mezcla de bloques correspondientes)
+        nuevo_arr = []
+        idx1, idx2 = 0, 0
+        while idx1 < len(f1) or idx2 < len(f2):
+            bloque1 = f1[idx1 : idx1 + tam_bloque]
+            bloque2 = f2[idx2 : idx2 + tam_bloque]
+            
+            # Mezclar bloque1 y bloque2
+            b_i, b_j = 0, 0
+            while b_i < len(bloque1) and b_j < len(bloque2):
+                if bloque1[b_i] <= bloque2[b_j]:
+                    nuevo_arr.append(bloque1[b_i])
+                    b_i += 1
+                else:
+                    nuevo_arr.append(bloque2[b_j])
+                    b_j += 1
+            nuevo_arr.extend(bloque1[b_i:])
+            nuevo_arr.extend(bloque2[b_j:])
+            
+            idx1 += tam_bloque
+            idx2 += tam_bloque
+
+        arr = nuevo_arr
+        pasos.append(f"  Fusión    -> Lista resultante: {arr}\n")
+        tam_bloque *= 2
+        paso_num += 1
+
+    pasos.append(f"Resultado Final Ordenado: {arr}")
+    return "\n".join(pasos)
+
+
+def mezcla_equilibrada_pasos(lista):
+    """
+    Ejercicio 3: Mezcla Equilibrada / Natural (Partición por tramos ascendentes naturales).
+    """
+    arr = list(lista)
+    pasos = [f"Lista Original (Calificaciones): {arr}\n"]
+    pasada = 1
+
+    while True:
+        # 1. Identificar tramos naturalmente ordenados (runs)
+        tramos = []
+        if not arr:
+            break
+        tramo_actual = [arr[0]]
+        for i in range(1, len(arr)):
+            if arr[i] >= arr[i - 1]:
+                tramo_actual.append(arr[i])
+            else:
+                tramos.append(tramo_actual)
+                tramo_actual = [arr[i]]
+        tramos.append(tramo_actual)
+
+        # Si solo queda 1 tramo, toda la lista ya está ordenada
+        if len(tramos) <= 1:
+            break
+
+        pasos.append(f"--- PASADA {pasada} ---")
+        pasos.append(f"  Tramos naturales detectados: {tramos}")
+
+        # 2. Distribuir tramos alternadamente en F1 y F2
+        f1 = tramos[0::2]
+        f2 = tramos[1::2]
+        pasos.append(f"  Archivo F1 (tramos): {f1}")
+        pasos.append(f"  Archivo F2 (tramos): {f2}")
+
+        # 3. Fusionar pares de tramos de F1 y F2
+        nuevo_arr = []
+        max_tramos = max(len(f1), len(f2))
+        for k in range(max_tramos):
+            t1 = f1[k] if k < len(f1) else []
+            t2 = f2[k] if k < len(f2) else []
+            
+            # Mezcla ordenada de dos tramos
+            i, j = 0, 0
+            while i < len(t1) and j < len(t2):
+                if t1[i] <= t2[j]:
+                    nuevo_arr.append(t1[i])
+                    i += 1
+                else:
+                    nuevo_arr.append(t2[j])
+                    j += 1
+            nuevo_arr.extend(t1[i:])
+            nuevo_arr.extend(t2[j:])
+
+        arr = nuevo_arr
+        pasos.append(f"  Fusión resultante: {arr}\n")
+        pasada += 1
+
+    pasos.append(f"Resultado Final Ordenado: {arr}")
+    return "\n".join(pasos)
+
+
+# =====================================================================
+# INTERFAZ GRÁFICA (TKINTER)
+# =====================================================================
+
+class AppOrdenamiento:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Métodos de Ordenamiento Externo en Python")
+        self.root.geometry("760x560")
+        self.root.configure(bg="#1e1e2e")
+
+        # Estilos
+        style = ttk.Style()
+        style.theme_use("clam")
+        style.configure("TNotebook", background="#1e1e2e", borderwidth=0)
+        style.configure("TNotebook.Tab", background="#313244", foreground="#cdd6f4", padding=[15, 8], font=("Segoe UI", 10, "bold"))
+        style.map("TNotebook.Tab", background=[("selected", "#89b4fa")], foreground=[("selected", "#11111b")])
+        style.configure("TFrame", background="#1e1e2e")
+
+        # Título principal
+        lbl_titulo = tk.Label(
+            root, 
+            text="Ejercicios de Ordenamiento Externo", 
+            font=("Segoe UI", 16, "bold"), 
+            bg="#1e1e2e", 
+            fg="#89b4fa"
+        )
+        lbl_titulo.pack(pady=(15, 5))
+
+        lbl_sub = tk.Label(
+            root, 
+            text="Selecciona una pestaña para ejecutar y visualizar cada método paso a paso", 
+            font=("Segoe UI", 9), 
+            bg="#1e1e2e", 
+            fg="#a6adc8"
+        )
+        lbl_sub.pack(pady=(0, 10))
+
+        # Contenedor de pestañas
+        self.notebook = ttk.Notebook(root)
+        self.notebook.pack(expand=True, fill="both", padx=15, pady=(0, 15))
+
+        # Crear las 3 pestañas
+        self.crear_tab_intercalacion()
+        self.crear_tab_mezcla_directa()
+        self.crear_tab_mezcla_equilibrada()
+
+    def parsear_numeros(self, texto):
+        try:
+            elementos = [int(x.strip()) for x in texto.split(",") if x.strip() != ""]
+            if not elementos:
+                raise ValueError
+            return elementos
+        except ValueError:
+            messagebox.showerror("Error de formato", "Por favor ingresa únicamente números enteros separados por comas.\nEjemplo: 12, 45, 7, 23")
+            return None
+
+    # --- PESTAÑA 1: INTERCALACIÓN ---
+    def crear_tab_intercalacion(self):
+        tab = ttk.Frame(self.notebook)
+        self.notebook.add(tab, text="1. Intercalación")
+
+        desc = tk.Label(
+            tab,
+            text="Ejercicio 1: Consolidar los inventarios (IDs de productos) de dos sucursales.\nNota: El algoritmo ordena internamente ambas listas antes de intercalarlas.",
+            font=("Segoe UI", 9, "italic"), bg="#1e1e2e", fg="#f9e2af", justify="left"
+        )
+        desc.pack(anchor="w", padx=15, pady=(12, 8))
+
+        frame_inputs = tk.Frame(tab, bg="#1e1e2e")
+        frame_inputs.pack(fill="x", padx=15)
+
+        tk.Label(frame_inputs, text="Lista Sucursal A:", bg="#1e1e2e", fg="#cdd6f4", font=("Segoe UI", 10)).grid(row=0, column=0, sticky="w", pady=4)
+        self.ent_inter_a = tk.Entry(frame_inputs, width=55, font=("Consolas", 10), bg="#313244", fg="#ffffff", insertbackground="white", relief="flat")
+        self.ent_inter_a.insert(0, "105, 12, 48, 89, 3")
+        self.ent_inter_a.grid(row=0, column=1, padx=10, pady=4)
+
+        tk.Label(frame_inputs, text="Lista Sucursal B:", bg="#1e1e2e", fg="#cdd6f4", font=("Segoe UI", 10)).grid(row=1, column=0, sticky="w", pady=4)
+        self.ent_inter_b = tk.Entry(frame_inputs, width=55, font=("Consolas", 10), bg="#313244", fg="#ffffff", insertbackground="white", relief="flat")
+        self.ent_inter_b.insert(0, "67, 21, 95, 14, 50")
+        self.ent_inter_b.grid(row=1, column=1, padx=10, pady=4)
+
+        btn_ejecutar = tk.Button(
+            tab, text="▶ Ejecutar Intercalación", command=self.ejecutar_intercalacion,
+            bg="#a6e3a1", fg="#11111b", font=("Segoe UI", 10, "bold"), relief="flat", padx=15, pady=5, cursor="hand2"
+        )
+        btn_ejecutar.pack(pady=10)
+
+        self.txt_inter = scrolledtext.ScrolledText(tab, height=15, font=("Consolas", 10), bg="#11111b", fg="#cdd6f4", relief="flat", padx=10, pady=10)
+        self.txt_inter.pack(fill="both", expand=True, padx=15, pady=(0, 15))
+
+    def ejecutar_intercalacion(self):
+        l1 = self.parsear_numeros(self.ent_inter_a.get())
+        l2 = self.parsear_numeros(self.ent_inter_b.get())
+        if l1 is not None and l2 is not None:
+            resultado = intercalacion_pasos(l1, l2)
+            self.txt_inter.delete("1.0", tk.END)
+            self.txt_inter.insert(tk.END, resultado)
+
+    # --- PESTAÑA 2: MEZCLA DIRECTA ---
+    def crear_tab_mezcla_directa(self):
+        tab = ttk.Frame(self.notebook)
+        self.notebook.add(tab, text="2. Mezcla Directa")
+
+        desc = tk.Label(
+            tab,
+            text="Ejercicio 2: Ordenar un archivo con folios de facturas desordenados.\nEl método divide y fusiona en bloques de tamaño 1, 2, 4, 8... sucesivamente.",
+            font=("Segoe UI", 9, "italic"), bg="#1e1e2e", fg="#f9e2af", justify="left"
+        )
+        desc.pack(anchor="w", padx=15, pady=(12, 8))
+
+        frame_inputs = tk.Frame(tab, bg="#1e1e2e")
+        frame_inputs.pack(fill="x", padx=15)
+
+        tk.Label(frame_inputs, text="Folios desordenados:", bg="#1e1e2e", fg="#cdd6f4", font=("Segoe UI", 10)).grid(row=0, column=0, sticky="w", pady=4)
+        self.ent_md = tk.Entry(frame_inputs, width=52, font=("Consolas", 10), bg="#313244", fg="#ffffff", insertbackground="white", relief="flat")
+        self.ent_md.insert(0, "42, 15, 88, 3, 29, 71, 10, 56")
+        self.ent_md.grid(row=0, column=1, padx=10, pady=4)
+
+        btn_ejecutar = tk.Button(
+            tab, text="▶ Ejecutar Mezcla Directa", command=self.ejecutar_mezcla_directa,
+            bg="#89b4fa", fg="#11111b", font=("Segoe UI", 10, "bold"), relief="flat", padx=15, pady=5, cursor="hand2"
+        )
+        btn_ejecutar.pack(pady=10)
+
+        self.txt_md = scrolledtext.ScrolledText(tab, height=16, font=("Consolas", 10), bg="#11111b", fg="#cdd6f4", relief="flat", padx=10, pady=10)
+        self.txt_md.pack(fill="both", expand=True, padx=15, pady=(0, 15))
+
+    def ejecutar_mezcla_directa(self):
+        lista = self.parsear_numeros(self.ent_md.get())
+        if lista is not None:
+            resultado = mezcla_directa_pasos(lista)
+            self.txt_md.delete("1.0", tk.END)
+            self.txt_md.insert(tk.END, resultado)
+
+    # --- PESTAÑA 3: MEZCLA EQUILIBRADA ---
+    def crear_tab_mezcla_equilibrada(self):
+        tab = ttk.Frame(self.notebook)
+        self.notebook.add(tab, text="3. Mezcla Equilibrada")
+
+        desc = tk.Label(
+            tab,
+            text="Ejercicio 3: Ordenar las calificaciones finales de un grupo de alumnos.\nDetecta secuencias ya ordenadas (tramos naturales) para optimizar las pasadas.",
+            font=("Segoe UI", 9, "italic"), bg="#1e1e2e", fg="#f9e2af", justify="left"
+        )
+        desc.pack(anchor="w", padx=15, pady=(12, 8))
+
+        frame_inputs = tk.Frame(tab, bg="#1e1e2e")
+        frame_inputs.pack(fill="x", padx=15)
+
+        tk.Label(frame_inputs, text="Calificaciones:", bg="#1e1e2e", fg="#cdd6f4", font=("Segoe UI", 10)).grid(row=0, column=0, sticky="w", pady=4)
+        self.ent_me = tk.Entry(frame_inputs, width=58, font=("Consolas", 10), bg="#313244", fg="#ffffff", insertbackground="white", relief="flat")
+        self.ent_me.insert(0, "70, 85, 92, 60, 75, 100, 55, 68, 80")
+        self.ent_me.grid(row=0, column=1, padx=10, pady=4)
+
+        btn_ejecutar = tk.Button(
+            tab, text="▶ Ejecutar Mezcla Equilibrada", command=self.ejecutar_mezcla_equilibrada,
+            bg="#cba6f7", fg="#11111b", font=("Segoe UI", 10, "bold"), relief="flat", padx=15, pady=5, cursor="hand2"
+        )
+        btn_ejecutar.pack(pady=10)
+
+        self.txt_me = scrolledtext.ScrolledText(tab, height=16, font=("Consolas", 10), bg="#11111b", fg="#cdd6f4", relief="flat", padx=10, pady=10)
+        self.txt_me.pack(fill="both", expand=True, padx=15, pady=(0, 15))
+
+    def ejecutar_mezcla_equilibrada(self):
+        lista = self.parsear_numeros(self.ent_me.get())
+        if lista is not None:
+            resultado = mezcla_equilibrada_pasos(lista)
+            self.txt_me.delete("1.0", tk.END)
+            self.txt_me.insert(tk.END, resultado)
+
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = AppOrdenamiento(root)
+    root.mainloop()
