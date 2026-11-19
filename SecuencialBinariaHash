@@ -1,0 +1,407 @@
+import tkinter as tk
+from tkinter import messagebox, ttk
+
+
+class AppBusquedas:
+
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Métodos de Búsqueda en Python")
+        self.root.geometry("680x520")
+        self.root.resizable(False, False)
+        self.root.configure(bg="#1e1e2e")
+
+        # --- DATOS DE EJEMPLO PARA LOS 3 EJERCICIOS ---
+        # Ejercicio 1: Lista desordenada de productos
+        self.productos = [
+            "Teclado Mecánico",
+            "Mouse Gamer",
+            "Monitor 24'",
+            "Audífonos Bluetooth",
+            "Webcam HD",
+            "Memoria USB 64GB",
+            "Silla Ergonómica",
+            "Alfombrilla XL",
+            "Micrófono Condensador",
+        ]
+
+        # Ejercicio 2: Lista ordenada de matrículas de alumnos
+        self.matriculas = [
+            1004,
+            1012,
+            1025,
+            1038,
+            1049,
+            1055,
+            1067,
+            1073,
+            1089,
+            1094,
+            1102,
+            1118,
+            1125,
+            1140,
+            1156,
+        ]
+
+        # Ejercicio 3: Tabla Hash (tamaño 10) con contactos (ID -> Nombre y Teléfono)
+        self.tamano_hash = 10
+        self.tabla_hash = [[] for _ in range(self.tamano_hash)]
+        contactos_iniciales = [
+            (101, "Ana López - 555-0101"),
+            (204, "Carlos Ruiz - 555-0204"),
+            (315, "Elena Gómez - 555-0315"),
+            (421, "Luis Pérez - 555-0421"),  # Colisión con 101 (421 % 10 == 1)
+            (508, "Sofía Díaz - 555-0508"),
+            (619, "Jorge Mora - 555-0619"),
+        ]
+        for clave, valor in contactos_iniciales:
+            indice = clave % self.tamano_hash
+            self.tabla_hash[indice].append((clave, valor))
+
+        self.crear_interfaz()
+
+    def crear_interfaz(self):
+        # Título principal
+        lbl_titulo = tk.Label(
+            self.root,
+            text="SISTEMA DE MÉTODOS DE BÚSQUEDA",
+            font=("Segoe UI", 16, "bold"),
+            bg="#1e1e2e",
+            fg="#cba6f7",
+        )
+        lbl_titulo.pack(pady=(15, 5))
+
+        lbl_sub = tk.Label(
+            self.root,
+            text="Selecciona un método en el menú superior para ejecutar su ejercicio",
+            font=("Segoe UI", 10),
+            bg="#1e1e2e",
+            fg="#a6adc8",
+        )
+        lbl_sub.pack(pady=(0, 15))
+
+        # --- MENÚ DE BOTONES ---
+        frame_menu = tk.Frame(self.root, bg="#1e1e2e")
+        frame_menu.pack(pady=5)
+
+        estilo_btn = {
+            "font": ("Segoe UI", 10, "bold"),
+            "width": 20,
+            "pady": 8,
+            "bd": 0,
+            "cursor": "hand2",
+        }
+
+        self.btn_secuencial = tk.Button(
+            frame_menu,
+            text="1. Búsqueda Secuencial",
+            bg="#89b4fa",
+            fg="#11111b",
+            command=self.vista_secuencial,
+            **estilo_btn,
+        )
+        self.btn_secuencial.grid(row=0, column=0, padx=8)
+
+        self.btn_binaria = tk.Button(
+            frame_menu,
+            text="2. Búsqueda Binaria",
+            bg="#a6e3a1",
+            fg="#11111b",
+            command=self.vista_binaria,
+            **estilo_btn,
+        )
+        self.btn_binaria.grid(row=0, column=1, padx=8)
+
+        self.btn_hash = tk.Button(
+            frame_menu,
+            text="3. Búsqueda Hash",
+            bg="#fab387",
+            fg="#11111b",
+            command=self.vista_hash,
+            **estilo_btn,
+        )
+        self.btn_hash.grid(row=0, column=2, padx=8)
+
+        # --- CONTENEDOR DINÁMICO DEL EJERCICIO ---
+        self.frame_contenido = tk.Frame(
+            self.root, bg="#313244", bd=2, relief="groove"
+        )
+        self.frame_contenido.pack(fill="both", expand=True, padx=25, pady=20)
+
+        # Cargar por defecto el primer ejercicio
+        self.vista_secuencial()
+
+    def limpiar_contenido(self):
+        for widget in self.frame_contenido.winfo_children():
+            widget.destroy()
+
+    def escribir_consola(self, texto):
+        self.txt_resultado.config(state="normal")
+        self.txt_resultado.delete("1.0", tk.END)
+        self.txt_resultado.insert(tk.END, texto)
+        self.txt_resultado.config(state="disabled")
+
+    # =========================================================================
+    # EJERCICIO 1: BÚSQUEDA SECUENCIAL
+    # =========================================================================
+    def vista_secuencial(self):
+        self.limpiar_contenido()
+
+        tk.Label(
+            self.frame_contenido,
+            text="Ejercicio 1: Búsqueda Secuencial en Inventario",
+            font=("Segoe UI", 13, "bold"),
+            bg="#313244",
+            fg="#89b4fa",
+        ).pack(pady=(12, 5))
+
+        tk.Label(
+            self.frame_contenido,
+            text=f"Inventario actual: {', '.join(self.productos)}",
+            font=("Segoe UI", 9),
+            bg="#313244",
+            fg="#cdd6f4",
+            wraplength=580,
+        ).pack(pady=5)
+
+        frame_input = tk.Frame(self.frame_contenido, bg="#313244")
+        frame_input.pack(pady=10)
+
+        tk.Label(
+            frame_input,
+            text="Producto a buscar:",
+            font=("Segoe UI", 10),
+            bg="#313244",
+            fg="#ffffff",
+        ).grid(row=0, column=0, padx=5)
+        self.ent_secuencial = tk.Entry(
+            frame_input, font=("Segoe UI", 10), width=25
+        )
+        self.ent_secuencial.grid(row=0, column=1, padx=5)
+        self.ent_secuencial.insert(0, "Webcam HD")
+
+        tk.Button(
+            frame_input,
+            text="Buscar",
+            font=("Segoe UI", 10, "bold"),
+            bg="#89b4fa",
+            fg="#11111b",
+            command=self.ejecutar_secuencial,
+            cursor="hand2",
+        ).grid(row=0, column=2, padx=5)
+
+        self.crear_area_resultado()
+
+    def ejecutar_secuencial(self):
+        objetivo = self.ent_secuencial.get().strip()
+        if not objetivo:
+            messagebox.showwarning("Aviso", "Ingresa el nombre de un producto.")
+            return
+
+        log = f"Iniciando búsqueda secuencial para: '{objetivo}'\n"
+        log += "-" * 55 + "\n"
+        encontrado = False
+
+        for i in range(len(self.productos)):
+            log += f"Paso {i + 1}: Comparando con índice [{i}] -> '{self.productos[i]}'\n"
+            if self.productos[i].lower() == objetivo.lower():
+                log += f"\n[ÉXITO] Producto '{self.productos[i]}' encontrado en la posición {i} tras {i + 1} comparaciones."
+                encontrado = True
+                break
+
+        if not encontrado:
+            log += f"\n[NO ENCONTRADO] El producto '{objetivo}' no está en el inventario."
+
+        self.escribir_consola(log)
+
+    # =========================================================================
+    # EJERCICIO 2: BÚSQUEDA BINARIA
+    # =========================================================================
+    def vista_binaria(self):
+        self.limpiar_contenido()
+
+        tk.Label(
+            self.frame_contenido,
+            text="Ejercicio 2: Búsqueda Binaria de Matrículas (Lista Ordenada)",
+            font=("Segoe UI", 13, "bold"),
+            bg="#313244",
+            fg="#a6e3a1",
+        ).pack(pady=(12, 5))
+
+        tk.Label(
+            self.frame_contenido,
+            text=f"Matrículas registradas: {self.matriculas}",
+            font=("Segoe UI", 9),
+            bg="#313244",
+            fg="#cdd6f4",
+            wraplength=580,
+        ).pack(pady=5)
+
+        frame_input = tk.Frame(self.frame_contenido, bg="#313244")
+        frame_input.pack(pady=10)
+
+        tk.Label(
+            frame_input,
+            text="Matrícula (número):",
+            font=("Segoe UI", 10),
+            bg="#313244",
+            fg="#ffffff",
+        ).grid(row=0, column=0, padx=5)
+        self.ent_binaria = tk.Entry(
+            frame_input, font=("Segoe UI", 10), width=18
+        )
+        self.ent_binaria.grid(row=0, column=1, padx=5)
+        self.ent_binaria.insert(0, "1089")
+
+        tk.Button(
+            frame_input,
+            text="Buscar",
+            font=("Segoe UI", 10, "bold"),
+            bg="#a6e3a1",
+            fg="#11111b",
+            command=self.ejecutar_binaria,
+            cursor="hand2",
+        ).grid(row=0, column=2, padx=5)
+
+        self.crear_area_resultado()
+
+    def ejecutar_binaria(self):
+        try:
+            objetivo = int(self.ent_binaria.get().strip())
+        except ValueError:
+            messagebox.showerror(
+                "Error", "Por favor ingresa un número entero válido."
+            )
+            return
+
+        izquierda = 0
+        derecha = len(self.matriculas) - 1
+        pasos = 0
+        encontrado = False
+
+        log = f"Iniciando búsqueda binaria para la matrícula: {objetivo}\n"
+        log += "-" * 55 + "\n"
+
+        while izquierda <= derecha:
+            pasos += 1
+            medio = (izquierda + derecha) // 2
+            valor_medio = self.matriculas[medio]
+            log += f"Paso {pasos}: Rango [{izquierda}..{derecha}] -> Centro índice [{medio}] = {valor_medio}\n"
+
+            if valor_medio == objetivo:
+                log += f"\n[ÉXITO] Matrícula {objetivo} encontrada en el índice {medio} en solo {pasos} pasos."
+                encontrado = True
+                break
+            elif valor_medio < objetivo:
+                log += f"   -> {valor_medio} es menor que {objetivo}, descartamos mitad izquierda.\n"
+                izquierda = medio + 1
+            else:
+                log += f"   -> {valor_medio} es mayor que {objetivo}, descartamos mitad derecha.\n"
+                derecha = medio - 1
+
+        if not encontrado:
+            log += f"\n[NO ENCONTRADO] La matrícula {objetivo} no existe en el registro."
+
+        self.escribir_consola(log)
+
+    # =========================================================================
+    # EJERCICIO 3: BÚSQUEDA HASH
+    # =========================================================================
+    def vista_hash(self):
+        self.limpiar_contenido()
+
+        tk.Label(
+            self.frame_contenido,
+            text="Ejercicio 3: Búsqueda Hash en Directorio (Función: ID % 10)",
+            font=("Segoe UI", 13, "bold"),
+            bg="#313244",
+            fg="#fab387",
+        ).pack(pady=(12, 5))
+
+        ids_disponibles = [
+            item[0] for bucket in self.tabla_hash for item in bucket
+        ]
+        tk.Label(
+            self.frame_contenido,
+            text=f"IDs almacenados en la tabla hash: {sorted(ids_disponibles)}",
+            font=("Segoe UI", 9),
+            bg="#313244",
+            fg="#cdd6f4",
+        ).pack(pady=5)
+
+        frame_input = tk.Frame(self.frame_contenido, bg="#313244")
+        frame_input.pack(pady=10)
+
+        tk.Label(
+            frame_input,
+            text="ID de Empleado:",
+            font=("Segoe UI", 10),
+            bg="#313244",
+            fg="#ffffff",
+        ).grid(row=0, column=0, padx=5)
+        self.ent_hash = tk.Entry(frame_input, font=("Segoe UI", 10), width=18)
+        self.ent_hash.grid(row=0, column=1, padx=5)
+        self.ent_hash.insert(0, "421")
+
+        tk.Button(
+            frame_input,
+            text="Buscar",
+            font=("Segoe UI", 10, "bold"),
+            bg="#fab387",
+            fg="#11111b",
+            command=self.ejecutar_hash,
+            cursor="hand2",
+        ).grid(row=0, column=2, padx=5)
+
+        self.crear_area_resultado()
+
+    def ejecutar_hash(self):
+        try:
+            clave = int(self.ent_hash.get().strip())
+        except ValueError:
+            messagebox.showerror(
+                "Error", "Por favor ingresa un ID numérico válido."
+            )
+            return
+
+        indice = clave % self.tamano_hash
+        bucket = self.tabla_hash[indice]
+
+        log = f"Iniciando búsqueda Hash para ID: {clave}\n"
+        log += "-" * 55 + "\n"
+        log += f"1. Aplicando función Hash: {clave} % {self.tamano_hash} = Índice [{indice}]\n"
+        log += f"2. Accediendo directamente a la cubeta [{indice}]: {bucket}\n"
+
+        encontrado = False
+        for k, v in bucket:
+            if k == clave:
+                log += f"\n[ÉXITO] Registro encontrado en acceso directo: {v}"
+                encontrado = True
+                break
+
+        if not encontrado:
+            log += f"\n[NO ENCONTRADO] El ID {clave} no se encuentra en la cubeta [{indice}]."
+
+        self.escribir_consola(log)
+
+    def crear_area_resultado(self):
+        self.txt_resultado = tk.Text(
+            self.frame_contenido,
+            height=11,
+            width=70,
+            font=("Consolas", 9),
+            bg="#181825",
+            fg="#a6adc8",
+            bd=0,
+            padx=10,
+            pady=10,
+            state="disabled",
+        )
+        self.txt_resultado.pack(pady=(5, 15), padx=15)
+
+
+if __name__ == "__main__":
+    ventana = tk.Tk()
+    app = AppBusquedas(ventana)
+    ventana.mainloop()
